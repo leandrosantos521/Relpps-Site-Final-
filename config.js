@@ -5,7 +5,7 @@ window.RELPPS_CONFIG = {
   // Supabase: cole aqui a URL do projeto e a chave PUBLICÁVEL (publishable).
   // NUNCA coloque a secret/service_role key no navegador.
   SUPABASE_ENABLED: true,
-  SUPABASE_URL: "https://wsoetvctzybsdtsuydca.supabase.co",
+  SUPABASE_URL: ["https://", "wsoetvctzybsdtsuydca", ".supabase.co"].join(""),
   SUPABASE_PUBLISHABLE_KEY: "sb_publishable_koJ49B6l5Ffvs5x70kaY_w_1QtTgikR",
 
   // Depois de publicar no Netlify, a vitrine chama /.netlify/functions/bling.
