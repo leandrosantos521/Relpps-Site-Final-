@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relpps — Homologação Bling</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f6f8f7;margin:0;padding:32px;color:#1c2420}
+    main{max-width:720px;margin:auto;background:#fff;padding:28px;border-radius:18px;box-shadow:0 8px 30px #0001}
+    h1{margin-top:0}.muted{color:#65716b}input,button{width:100%;box-sizing:border-box;padding:13px;border-radius:10px;font-size:16px}input{border:1px solid #ccd5d0;margin:12px 0}button{border:0;background:#20a85a;color:#fff;font-weight:700;cursor:pointer}button:disabled{opacity:.6}pre{white-space:pre-wrap;background:#101513;color:#e9fff1;padding:16px;border-radius:12px;margin-top:20px;min-height:80px}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Homologação do Bling</h1>
+  <p class="muted">Executa automaticamente GET → POST → PUT → PATCH → DELETE e encadeia o header <code>x-bling-homologacao</code>.</p>
+  <label for="secret">HOMOLOGATION_SECRET</label>
+  <input id="secret" type="password" autocomplete="off" placeholder="Digite o segredo configurado no Netlify">
+  <button id="run">Executar homologação</button>
+  <pre id="result">Aguardando execução…</pre>
+</main>
+<script>
+const btn=document.getElementById('run');
+const result=document.getElementById('result');
+btn.addEventListener('click',async()=>{
+  const secret=document.getElementById('secret').value.trim();
+  if(!secret){result.textContent='Digite o HOMOLOGATION_SECRET.';return;}
+  btn.disabled=true; result.textContent='Executando os 5 requests…';
+  try{
+    const r=await fetch('/api/bling-homologacao',{method:'POST',headers:{'x-relpps-homologation-secret':secret,'Content-Type':'application/json'},body:'{}'});
+    const data=await r.json().catch(()=>({message:'Resposta inválida'}));
+    result.textContent=JSON.stringify(data,null,2);
+  }catch(e){result.textContent='Erro: '+e.message}
+  finally{btn.disabled=false}
+});
+</script>
+</body>
+</html>

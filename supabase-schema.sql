@@ -85,3 +85,43 @@ drop policy if exists "Cliente pode criar seus cupons do clube" on public.clube_
 create policy "Cliente pode criar seus cupons do clube" on public.clube_relpps_cupons for insert to authenticated with check (auth.uid() = user_id);
 drop policy if exists "Cliente pode atualizar seus cupons do clube" on public.clube_relpps_cupons;
 create policy "Cliente pode atualizar seus cupons do clube" on public.clube_relpps_cupons for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ===== PEDIDOS ONLINE RELPPS =====
+-- Esta tabela é usada apenas pelo backend (service_role). Não exponha a service_role key no navegador.
+create table if not exists public.relpps_orders (
+  id text primary key,
+  status text not null default 'AWAITING_PAYMENT',
+  payment_status text not null default 'AWAITING_PAYMENT',
+  payment_method text not null,
+  customer jsonb not null default '{}'::jsonb,
+  delivery jsonb not null default '{}'::jsonb,
+  items jsonb not null default '[]'::jsonb,
+  totals jsonb not null default '{}'::jsonb,
+  discounts jsonb not null default '{}'::jsonb,
+  bling_order_id bigint,
+  mp_preference_id text,
+  mp_payment_id text,
+  infinitepay_transaction_nsu text,
+  infinitepay_invoice_slug text,
+  infinitepay_receipt_url text,
+  payment_url text,
+  error_message text,
+  raw jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  paid_at timestamptz
+);
+
+create index if not exists relpps_orders_bling_order_id_idx on public.relpps_orders (bling_order_id);
+create index if not exists relpps_orders_mp_preference_id_idx on public.relpps_orders (mp_preference_id);
+create index if not exists relpps_orders_mp_payment_id_idx on public.relpps_orders (mp_payment_id);
+create index if not exists relpps_orders_infinitepay_transaction_idx on public.relpps_orders (infinitepay_transaction_nsu);
+create index if not exists relpps_orders_created_at_idx on public.relpps_orders (created_at desc);
+
+alter table public.relpps_orders enable row level security;
+-- Sem policies para anon/authenticated: leitura e escrita passam pelo backend com service_role.
+
+-- Se a tabela já existir, execute também:
+alter table public.relpps_orders add column if not exists infinitepay_transaction_nsu text;
+alter table public.relpps_orders add column if not exists infinitepay_invoice_slug text;
+alter table public.relpps_orders add column if not exists infinitepay_receipt_url text;

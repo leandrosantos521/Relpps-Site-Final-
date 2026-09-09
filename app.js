@@ -1609,7 +1609,7 @@ function renderPaymentOptions(method){
   let current=checkoutPayment || $("input[name=payment]:checked")?.value || null;
   const opts=[
     ["pix_online","Pix","Pagamento online seguro."],
-    ["card","Cartão","Pagamento online pelo provedor configurado."]
+    ["card","Cartão","Pagamento online seguro via InfinitePay."]
   ];
   // Dinheiro é permitido somente para retirada presencial.
   if(method==="pickup") opts.push(["cash","Dinheiro","Pagamento em dinheiro no momento da retirada."]);
@@ -1621,7 +1621,7 @@ function renderPaymentOptions(method){
   const note=$("#paymentNote");
   if(note) note.textContent=method==="pickup"
     ?(CHECKOUT_TEST_MODE?"Modo de teste ativo. Para retirada presencial, Pix, Cartão ou Dinheiro estão disponíveis.":"Para retirada presencial, escolha Pix, Cartão ou Dinheiro.")
-    :(CHECKOUT_TEST_MODE?"Modo de teste ativo: nenhum pagamento real será cobrado.":"Seu pedido será liberado automaticamente após a confirmação do pagamento.");
+    :(CHECKOUT_TEST_MODE?"Modo de teste ativo: nenhum pagamento real será cobrado.":"Seu pedido será liberado automaticamente após a confirmação do pagamento pela InfinitePay.");
 }
 function formatCep(v){ const d=String(v||"").replace(/\D/g,"").slice(0,8); return d.length>5?`${d.slice(0,5)}-${d.slice(5)}`:d; }
 async function lookupCep(){
@@ -1751,23 +1751,32 @@ function paymentMessage(order,data){ return ["Olá! Preciso de ajuda com o pagam
 function releaseMessage(order){ const type=isPickupMethod(order.delivery.method)?"retirada":"entrega"; return ["Olá! Seu pagamento foi aprovado.",`Pedido ${order.id} foi liberado para ${type}.`,`Status: ${order.fulfillmentStatus}`].join("\n"); }
 async function createCheckoutOrder(payload){
   const r=await fetch("/api/checkout?action=create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  const data=await r.json(); if(!r.ok)throw new Error(data.message||"Não foi possível criar o pedido."); return data.order;
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.message||"Não foi possível criar o pedido.");
+  return data;
 }
-async function releaseCheckoutOrder(order){
-  const r=await fetch("/api/checkout?action=release",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({order})});
-  const data=await r.json(); if(!r.ok)throw new Error(data.message||"Não foi possível liberar o pedido."); return data.order;
+async function getCheckoutOrderStatus(id){
+  const r=await fetch(`/api/checkout?action=status&order=${encodeURIComponent(id)}`,{cache:"no-store"});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.message||"Não foi possível consultar o pedido.");
+  return data.order;
 }
 function showPaymentResult(order,data){
   lastCreatedOrder=order;
   $("#paymentResultTitle").textContent=order.status||"Aguardando pagamento";
-  $("#paymentResultText").textContent=`Pedido ${order.id} criado. ${order.delivery.method==="pickup_uber"?"Após o pagamento aprovado, aguarde a liberação e solicite o Uber por sua conta.":isPickupMethod(order.delivery.method)?"Após o pagamento aprovado, ele será preparado para retirada.":"Após o pagamento aprovado, ele será liberado para entrega."}`;
+  $("#paymentResultText").textContent=`Pedido ${order.id} criado. ${order.delivery.method==="pickup_uber"?"Após o pagamento aprovado, aguarde a liberação e solicite o Uber por sua conta.":isPickupMethod(order.delivery.method)?`Após o pagamento aprovado, ele será preparado para retirada. Local: ${order.delivery.pickupAddress||"Relpps Cosméticos — Taguatinga Centro, Brasília - DF"}.`:"Após o pagamento aprovado, ele será liberado para entrega."}`;
   const actions=$("#paymentResultActions");
-  const testButton=CHECKOUT_TEST_MODE && (data.payment==="pix_online" || data.payment==="card") ? '<button class="btn btn-gold full" id="simulatePaymentButton" type="button">SIMULAR PAGAMENTO APROVADO (TESTE)</button>' : "";
+  const online=data.payment==="pix_online" || data.payment==="card";
+  const testButton=CHECKOUT_TEST_MODE && online ? '<button class="btn btn-gold full" id="simulatePaymentButton" type="button">SIMULAR PAGAMENTO APROVADO (TESTE)</button>' : "";
   actions.innerHTML=`${testButton}<button class="checkout-whatsapp-link" id="paymentWhatsAppButton" type="button">💬 Falar sobre pagamento no WhatsApp</button>`;
   $("#paymentWhatsAppButton").onclick=()=>window.open(whatsappLink(paymentMessage(order,data)),"_blank","noopener");
   $("#simulatePaymentButton")?.addEventListener("click",async()=>{
-    try{ const released=await releaseCheckoutOrder(lastCreatedOrder); lastCreatedOrder=released; const earned=grantPurchasePoints(released); renderLoyaltyDashboard(); renderMinhaRelppsPage(); $("#paymentResultTitle").textContent="Pagamento aprovado ✓"; $("#paymentResultText").textContent=releaseMessage(released)+(earned?` Você ganhou ${earned} ponto(s) no Club Relpps.`:""); actions.innerHTML='<button class="btn btn-gold full" type="button" data-close="paymentModal">PEDIDO LIBERADO</button>'; actions.querySelector("[data-close]").onclick=()=>closeModal("paymentModal"); toast(earned?`Pagamento aprovado! +${earned} ponto(s) no Club Relpps.`:"Pagamento aprovado e pedido liberado!"); }
-    catch(e){toast(e.message||"Erro ao liberar pedido.");}
+    lastCreatedOrder={...lastCreatedOrder,status:"Pagamento aprovado",paymentStatus:"APPROVED",fulfillmentStatus:isPickupMethod(lastCreatedOrder.delivery?.method)?"Liberado para preparação e retirada":"Liberado para preparação e entrega"};
+    $("#paymentResultTitle").textContent="Pagamento aprovado ✓";
+    $("#paymentResultText").textContent=isPickupMethod(lastCreatedOrder.delivery?.method)?"Teste aprovado. Em produção, a liberação será feita automaticamente pelo webhook do gateway.":"Teste aprovado. Em produção, o pedido será liberado automaticamente após o webhook do gateway.";
+    actions.innerHTML='<button class="btn btn-gold full" type="button" data-close="paymentModal">PEDIDO LIBERADO</button>';
+    actions.querySelector("[data-close]").onclick=()=>closeModal("paymentModal");
+    toast("Pagamento aprovado no modo de teste.");
   });
   $("#paymentModal").classList.remove("hidden");
 }
@@ -1795,12 +1804,18 @@ async function submitOrder(form){
   };
   const btn=$("#checkoutSubmitButton"); const old=btn.textContent; btn.disabled=true; btn.textContent="CRIANDO PEDIDO…";
   try{
-    let bling=null;
-    try{ const br=await fetch("/api/bling?action=order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); if(br.ok)bling=await br.json(); }catch{}
-    payload.bling=bling;
-    const order=await createCheckoutOrder(payload);
-    markAppliedCouponUsed(); renderLoyaltyDashboard(); renderMinhaRelppsPage();
-    cart=[];saveCart();renderCart();closeModal("checkoutModal");showPaymentResult(order,data);toast("Pedido criado com status Aguardando pagamento.");
+    payload.customer.userId=currentUser?.id||null;
+    const result=await createCheckoutOrder(payload);
+    const order=result.order;
+    renderLoyaltyDashboard(); renderMinhaRelppsPage();
+    cart=[];saveCart();renderCart();closeModal("checkoutModal");
+    if(result.paymentUrl && (data.payment==="pix_online" || data.payment==="card")){
+      toast("Pedido criado. Redirecionando para o pagamento seguro…");
+      setTimeout(()=>{window.location.href=result.paymentUrl;},250);
+      return;
+    }
+    showPaymentResult(order,data);
+    toast(data.payment==="cash"?"Pedido criado e aguardando pagamento na retirada.":"Pedido criado com status Aguardando pagamento.");
   }catch(e){toast(e.message||"Erro ao criar pedido.");}
   finally{btn.disabled=false;btn.textContent=old;}
 }
@@ -2229,7 +2244,8 @@ function initCheckoutStages(){
   $("#checkoutSubmitButton")?.addEventListener("click",()=>{
     const payment=$("input[name=payment]:checked")?.value;
     if(!payment){ toast("Escolha Pix, Cartão ou Dinheiro para continuar."); return; }
-    toast("Visual do pagamento concluído. A integração com o provedor, Bling e WhatsApp será conectada na próxima etapa.");
+    const form=$("#checkoutForm");
+    if(form) submitOrder(form);
   });
   $$(".checkout-progress span").forEach((el,index)=>el.addEventListener("click",()=>{
     const target=index+1;
@@ -2413,6 +2429,36 @@ function initProductPage(){
   $("#productReviewForm")?.addEventListener("submit",async e=>{e.preventDefault();if(!productPageActive)return;const comment=$("#reviewComment").value.trim();if(comment.length<8){toast("Escreva um comentário um pouco mais completo.");return;}const files=[...(reviewPhotos?.files||[])].filter(f=>f.type.startsWith("image/")&&f.size<=5*1024*1024).slice(0,4);const images=await Promise.all(files.map(f=>new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.readAsDataURL(f)})));const reviews=getReviews(productPageActive.id);reviews.push({name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente Relpps",rating:Number($("#reviewRating").value)||5,comment,images,date:new Date().toLocaleDateString("pt-BR")});saveReviews(productPageActive.id,reviews);$("#reviewComment").value="";if(reviewPhotos)reviewPhotos.value="";if(reviewPreview)reviewPreview.innerHTML="";renderProductReviews();toast("Obrigado! Sua avaliação foi publicada neste navegador.");});
 }
 initProductPage();
+
+
+async function handleCheckoutReturn(){
+  const params=new URLSearchParams(location.search);
+  const mode=params.get("checkout");
+  if(mode!=="return" && mode!=="infinitepay-return") return;
+  const id=params.get("order");
+  if(!id) return;
+  try{
+    if(mode==="infinitepay-return" && params.get("transaction_nsu") && params.get("slug")){
+      try{
+        await fetch(`/.netlify/functions/checkout?action=infinitepay-return&order=${encodeURIComponent(id)}&transaction_nsu=${encodeURIComponent(params.get("transaction_nsu"))}&slug=${encodeURIComponent(params.get("slug"))}`,{cache:"no-store"});
+      }catch{}
+    }
+    // O webhook normalmente já atualizou o pedido. Damos alguns segundos para
+    // a confirmação chegar antes de exibir o status final ao cliente.
+    let order=await getCheckoutOrderStatus(id);
+    for(let i=0;i<4 && order.paymentStatus!=="APPROVED" && order.paymentStatus!=="FAILED";i++){
+      await new Promise(r=>setTimeout(r,1200));
+      order=await getCheckoutOrderStatus(id);
+    }
+    lastCreatedOrder={id:order.id,status:order.status,paymentStatus:order.paymentStatus,delivery:order.delivery,totals:order.totals};
+    const fakeData={name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente",payment:order.paymentStatus==="APPROVED"?"card":"card"};
+    showPaymentResult(lastCreatedOrder,fakeData);
+    if(order.paymentStatus==="APPROVED") toast("Pagamento confirmado. Pedido liberado.");
+    else if(order.paymentStatus==="FAILED") toast("O pagamento não foi aprovado. Você pode tentar novamente.");
+    history.replaceState(null,"",location.pathname+location.hash);
+  }catch(e){ console.error(e); }
+}
+handleCheckoutReturn();
 
 
 // ===== Club Relpps: conta dedicada, jornada premium e cupom no pagamento =====

@@ -329,11 +329,27 @@ function serveStatic(req, res, url) {
   });
 }
 
+async function localCheckoutFunctionProxy(req,res,url){
+  try{
+    const fn=require('./netlify/functions/checkout');
+    const body=req.method==='POST'?await parseBody(req):null;
+    const event={
+      httpMethod:req.method,
+      queryStringParameters:Object.fromEntries(url.searchParams.entries()),
+      headers:req.headers,
+      body:body?JSON.stringify(body):null
+    };
+    const out=await fn.handler(event);
+    res.writeHead(out.statusCode||200,out.headers||{'Content-Type':'application/json; charset=utf-8'});
+    res.end(out.body||'');
+  }catch(e){ return json(res,500,{message:e.message||'Erro no checkout local.'}); }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
   if (url.pathname === '/api/bling' || url.pathname.startsWith('/.netlify/functions/bling')) return api(req, res, url);
   if ((url.pathname === '/api/shipping' || url.pathname.startsWith('/.netlify/functions/shipping')) && req.method === 'POST') { try { const body=await parseBody(req); return json(res,200,localShippingQuote(body)); } catch(e){ return json(res,400,{message:e.message||'Erro ao calcular frete.'}); } }
-  if ((url.pathname === '/api/checkout' || url.pathname.startsWith('/.netlify/functions/checkout')) && req.method === 'POST') return localCheckoutApi(req,res,url);
+  if (url.pathname === '/api/checkout' || url.pathname.startsWith('/.netlify/functions/checkout')) return localCheckoutFunctionProxy(req,res,url);
   return serveStatic(req, res, url);
 });
 

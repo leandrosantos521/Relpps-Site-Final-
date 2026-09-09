@@ -35,3 +35,13 @@
   from = "/api/checkout"
   to = "/.netlify/functions/checkout"
   status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/bling-homologacao"
+  to = "/.netlify/functions/bling-homologacao"
+  status = 200

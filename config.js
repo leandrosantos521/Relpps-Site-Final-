@@ -29,5 +29,5 @@ window.RELPPS_CONFIG = {
 };
 
 // Checkout e frete: mantenha true enquanto estiver testando sem credenciais reais.
-window.RELPPS_CONFIG.CHECKOUT_TEST_MODE = true;
-window.RELPPS_CONFIG.SHIPPING_TEST_MODE = true;
+window.RELPPS_CONFIG.CHECKOUT_TEST_MODE = false;
+window.RELPPS_CONFIG.SHIPPING_TEST_MODE = false;
