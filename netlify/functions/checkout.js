@@ -79,7 +79,9 @@ async function createOrder(body){
   if(payment==='cash' && body.delivery?.method!=='pickup') throw new Error('Dinheiro está disponível somente para retirada presencial.');
   if(!Array.isArray(body.items)||!body.items.length) throw new Error('Carrinho vazio.');
   const id=orderId();
-  if(isProduction() && process.env.BLING_CREATE_ORDERS!=='true') throw new Error('Para produção, ative BLING_CREATE_ORDERS=true para validar estoque/preços no Bling antes de cobrar.');
+  if(isProduction() && process.env.BLING_CREATE_ORDERS!=='true') throw new Error('Integração Bling não está habilitada para produção. Defina BLING_CREATE_ORDERS=true no Netlify.');
+  if(isProduction() && !storeConfigured()) throw new Error('Banco de pedidos não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no Netlify para confirmar pagamentos com segurança.');
+  if(isProduction() && payment!=='cash' && !infinitePayConfigured()) throw new Error('Pagamento online não configurado. Defina INFINITEPAY_HANDLE no Netlify.');
 
   let coupon=null;
   if(body.discounts?.couponCode && body.customer?.userId){
@@ -185,7 +187,10 @@ async function checkInfinitePayReturn(event){
         const paidSituation=situationId('paid');
         if(paidSituation){try{await setOrderSituation(order.bling_order_id,paidSituation)}catch(e){console.error('[Bling return update]',e)}}
       }
-      await updateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,receipt_url:null}}});
+      await updateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:event.queryStringParameters?.receipt_url||null}}});
+      if(order.raw?.customer?.userId && order.raw?.discounts?.couponCode){
+        try{await markCouponUsed(order.raw.discounts.couponCode,order.raw.customer.userId)}catch(e){console.error('[Coupon return]',e)}
+      }
     }
   }
   return json(200,{ok:true,paid:Boolean(payment?.paid),payment});
