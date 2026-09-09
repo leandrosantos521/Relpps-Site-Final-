@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Relpps Cosméticos: cosméticos e produtos profissionais para unhas, cílios, sobrancelhas e equipamentos. Compre online com segurança e atendimento humanizado.">
+  <meta name="robots" content="index,follow">
+  <meta name="theme-color" content="#5a4637">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Relpps Cosméticos | Beleza profissional">
+  <meta property="og:description" content="Produtos selecionados para profissionais. Unhas, cílios, sobrancelhas e equipamentos.">
+  <meta property="og:url" content="https://relppscosmeticos.netlify.app/">
+  <meta property="og:image" content="https://relppscosmeticos.netlify.app/assets/relpps-logo-completa.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Relpps Cosméticos | Beleza profissional">
+  <meta name="twitter:description" content="Cosméticos e produtos profissionais selecionados para você.">
+  <meta name="twitter:image" content="https://relppscosmeticos.netlify.app/assets/relpps-logo-completa.png">
+  <link rel="canonical" href="https://relppscosmeticos.netlify.app/">
+  <title>Relpps Cosméticos | Cosméticos Profissionais Online</title>
+  <link rel="icon" href="./assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"Store",
+    "name":"Relpps Cosméticos",
+    "url":"https://relppscosmeticos.netlify.app/",
+    "description":"Loja online de cosméticos e produtos profissionais para unhas, cílios, sobrancelhas e equipamentos.",
+    "image":"https://relppscosmeticos.netlify.app/assets/relpps-logo-completa.png",
+    "priceRange":"$$",
+    "currenciesAccepted":"BRL",
+    "paymentAccepted":"Pix, Cartão, Dinheiro para retirada presencial",
+    "areaServed":"BR",
+    "address":{"@type":"PostalAddress","streetAddress":"C 12, Área Especial 02, Loja 30","addressLocality":"Taguatinga","addressRegion":"DF","postalCode":"72010-901","addressCountry":"BR"}
+  }
+  </script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="announcement" role="region" aria-label="Informações e benefícios da loja">
+    <div class="announcement-track">
+      <div class="announcement-set">
+        <span>✦ Compra segura</span><b>•</b><span>🚚 Envio para todo Brasil</span><b>•</b><span>✦ Beleza profissional</span><b>•</b><span>💬 Atendimento humanizado</span><b>•</b><span>✦ Produtos selecionados</span><b>•</b><span>🛍 Compra prática e segura</span><b>•</b>
+      </div>
+      <div class="announcement-set" aria-hidden="true">
+        <span>✦ Compra segura</span><b>•</b><span>🚚 Envio para todo Brasil</span><b>•</b><span>✦ Beleza profissional</span><b>•</b><span>💬 Atendimento humanizado</span><b>•</b><span>✦ Produtos selecionados</span><b>•</b><span>🛍 Compra prática e segura</span><b>•</b>
+      </div>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-main container">
+      <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileNavPanel">☰</button>
+
+      <div class="search-box">
+        <input id="searchInput" type="search" placeholder="O que você está buscando?">
+        <button id="searchButton" aria-label="Buscar">⌕</button>
+      </div>
+      <button class="compact-search-button" id="compactSearchButton" type="button" aria-label="Abrir busca">⌕</button>
+
+      <a class="brand brand-combined" href="#inicio" aria-label="Relpps Cosméticos">
+        <img class="brand-combined-logo" src="./assets/relpps-logo-header.png" alt="Relpps Cosméticos">
+      </a>
+
+      <div class="header-actions">
+        <button class="header-link" id="accountBtn" type="button">
+          <span class="icon account-face-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.5"></circle><path d="M4.5 20c.7-3.5 3.5-5.5 7.5-5.5s6.8 2 7.5 5.5"></path></svg></span>
+          <span><b>Olá! Faça login</b><small class="account-club-sub">Entre ou crie sua conta</small></span>
+        </button>
+        <button class="header-icon cart-mini" id="cartButton" type="button" aria-label="Carrinho">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10.5a2 2 0 0 0 1.9-1.4L19 8H6"/><circle cx="9" cy="19" r="1.35"/><circle cx="17" cy="19" r="1.35"/></svg><em id="cartCount">0</em>
+        </button>
+      </div>
+    </div>
+
+    <nav class="nav-bar" id="mainNav" aria-label="Categorias principais">
+      <a href="#produtos" data-area="">NOVIDADES</a>
+      <div class="nav-mega">
+        <button class="nav-mega-trigger" type="button" data-area="unhas">UNHAS <span class="nav-chevron" aria-hidden="true"></span></button>
+        <div class="mega-panel mega-unhas">
+          <div class="mega-intro"><span class="mega-kicker">UNHAS</span><b>Escolha o que você procura</b><small>Entre direto na categoria desejada.</small></div>
+          <div class="mega-links">
+            <button data-area="unhas" data-category="géis">Géis e Alongamento</button><button data-area="unhas" data-category="esmaltes">Esmaltes e Cores</button><button data-area="unhas" data-category="preparadores">Preparadores</button><button data-area="unhas" data-category="top coat">Top Coat e Selantes</button><button data-area="unhas" data-category="polygel">Polygel e Acrílico</button><button data-area="unhas" data-category="lixas">Lixas e Brocas</button><button data-area="unhas" data-category="moldes">Fibra, Tips e Moldes</button><button data-area="unhas" data-category="acessórios">Acessórios e Decorações</button><button data-area="unhas" data-category="ferramentas">Pinças, Alicates e Ferramentas</button><button data-area="unhas" data-category="equipamentos">Cabines e Equipamentos</button></div>
+          <button class="mega-all" data-area="unhas">Ver tudo em Unhas →</button>
+        </div>
+      </div>
+      <div class="nav-mega">
+        <button class="nav-mega-trigger" type="button" data-area="cilios">CÍLIOS <span class="nav-chevron" aria-hidden="true"></span></button>
+        <div class="mega-panel mega-cilios">
+          <div class="mega-intro"><span class="mega-kicker">CÍLIOS</span><b>Encontre seu tipo ideal</b><small>Produtos para extensão, volume e aplicação.</small></div>
+          <div class="mega-links">
+            <button data-area="cilios" data-category="cílios">Cílios e Fios</button><button data-area="cilios" data-category="tufinhos">Tufinhos</button><button data-area="cilios" data-category="colas">Colas para Cílios</button><button data-area="cilios" data-category="removedores">Removedores</button><button data-area="cilios" data-category="pinças">Pinças</button><button data-area="cilios" data-category="fita">Fitas e Pads</button><button data-area="cilios" data-category="preparadores">Pré e Pós Aplicação</button><button data-area="cilios" data-category="finalizadores">Finalizadores para Cílios</button><button data-area="cilios" data-category="acessórios">Acessórios para Extensão</button></div>
+          <button class="mega-all" data-area="cilios">Ver tudo em Cílios →</button>
+        </div>
+      </div>
+      <div class="nav-mega">
+        <button class="nav-mega-trigger" type="button" data-area="sobrancelhas">SOBRANCELHAS <span class="nav-chevron" aria-hidden="true"></span></button>
+        <div class="mega-panel mega-sobrancelhas">
+          <div class="mega-intro"><span class="mega-kicker">SOBRANCELHAS</span><b>Produtos para cada técnica</b><small>Design, henna, brow e cuidados.</small></div>
+          <div class="mega-links">
+            <button data-area="sobrancelhas" data-category="henna">Henna e Pigmentos</button><button data-area="sobrancelhas" data-category="design">Design de Sobrancelhas</button><button data-area="sobrancelhas" data-category="laminação">Brow Lamination</button><button data-area="sobrancelhas" data-category="tintura">Tintura e Coloração</button><button data-area="sobrancelhas" data-category="pinças">Pinças e Ferramentas</button><button data-area="sobrancelhas" data-category="laminas">Lâminas e Agulhas</button><button data-area="sobrancelhas" data-category="acessórios">Acessórios</button><button data-area="sobrancelhas" data-category="cuidados">Cuidados e Finalização</button></div>
+          <button class="mega-all" data-area="sobrancelhas">Ver tudo em Sobrancelhas →</button>
+        </div>
+      </div>
+      <div class="nav-mega">
+        <button class="nav-mega-trigger" type="button" data-area="equipamentos">EQUIPAMENTOS <span class="nav-chevron" aria-hidden="true"></span></button>
+        <div class="mega-panel mega-equipamentos">
+          <div class="mega-intro"><span class="mega-kicker">EQUIPAMENTOS</span><b>Monte seu espaço profissional</b><small>Praticidade para unha, cílios e sobrancelhas.</small></div>
+          <div class="mega-links"><button data-area="equipamentos" data-category="cabines">Cabines</button><button data-area="equipamentos" data-category="luminarias">Luminárias</button><button data-area="equipamentos" data-category="aspiradores">Aspiradores</button><button data-area="equipamentos" data-category="motores">Lixadeiras e Motores</button><button data-area="equipamentos" data-category="ferramentas">Ferramentas</button><button data-area="equipamentos" data-category="acessórios">Acessórios</button></div>
+          <button class="mega-all" data-area="equipamentos">Ver todos os Equipamentos →</button>
+        </div>
+      </div>
+      <a href="#marcas">MARCAS</a>
+      <a href="#atendimento">ATENDIMENTO</a>
+      <a class="relpps-plus-nav" href="#clube-relpps" aria-label="Conheça o Club Relpps">✦ CLUB RELPPS</a>
+    </nav>
+  </header>
+
+  <main id="inicio">
+    <section class="hero-slider" aria-label="Destaques Relpps">
+      <div class="hero-slides">
+        <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-novidade.jpg" alt="Novidades Relpps Cosméticos" fetchpriority="high"></a>
+        <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-colecao.jpg" alt="Coleção Relpps Cosméticos" loading="lazy"></a>
+        <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-ofertas.jpg" alt="Ofertas especiais Relpps Cosméticos" loading="lazy"></a>
+      </div>
+      <button class="hero-arrow hero-prev" type="button" aria-label="Banner anterior">‹</button>
+      <button class="hero-arrow hero-next" type="button" aria-label="Próximo banner">›</button>
+      <div class="hero-dots" aria-label="Navegação dos banners">
+        <button class="hero-dot active" type="button" aria-label="Banner 1"></button>
+        <button class="hero-dot" type="button" aria-label="Banner 2"></button>
+        <button class="hero-dot" type="button" aria-label="Banner 3"></button>
+      </div>
+    </section>
+
+    <section class="trust-strip" aria-label="Faixa de confiança">
+      <div class="container trust-strip-inner">
+        <div><span>✦</span><b>Compra 100% segura</b><small>Dados protegidos</small></div>
+        <div><span>◈</span><b>Curadoria profissional</b><small>Produtos selecionados</small></div>
+        <div><span>↗</span><b>Envio e retirada</b><small>Você escolhe como receber</small></div>
+        <div><span>◌</span><b>Atendimento humanizado</b><small>Suporte pelo WhatsApp</small></div>
+      </div>
+    </section>
+
+    <section class="category-strip container" id="categorias">
+      <div class="section-heading centered">
+        <span class="eyebrow">EXPLORE</span>
+        <h2>Encontre o que você precisa</h2>
+      </div>
+      <div class="category-grid category-grid-main">
+        <button class="category-card category-card-unhas" data-area="unhas"><span class="category-art category-photo"><img src="./assets/category-unhas.png" alt="Unhas profissionais com acabamento elegante"></span><b>Unhas</b><small>Géis, esmaltes, preparadores, TOP COAT e acessórios</small></button>
+        <button class="category-card category-card-cilios" data-area="cilios"><span class="category-art category-photo"><img src="./assets/category-cilios.png" alt="Extensão de cílios profissional"></span><b>Cílios</b><small>Fio a fio, volumes, colas, pinças e acessórios</small></button>
+        <button class="category-card category-card-sobrancelhas" data-area="sobrancelhas"><span class="category-art category-photo"><img src="./assets/category-sobrancelhas.png" alt="Design profissional de sobrancelhas"></span><b>Sobrancelhas</b><small>Henna, brow, laminação, design e acessórios</small></button>
+        <button class="category-card category-card-equipamentos" data-area="equipamentos"><span class="category-art category-photo"><img src="./assets/category-equipamentos.jpg" alt="Equipamento portátil para profissionais"></span><b>Equipamentos</b><small>Cabines, luminárias, ferramentas e acessórios profissionais</small></button>
+      </div>
+    </section>
+
+    <section class="category-funnel container" id="funnelCategorias" aria-live="polite">
+      <div class="funnel-head"><div><span class="eyebrow" id="funnelEyebrow">CATEGORIAS</span><h2 id="funnelTitle">Escolha uma área para continuar</h2><p id="funnelText">Selecione Unhas, Cílios, Sobrancelhas ou Equipamentos e depois escolha exatamente o que procura.</p></div><button type="button" class="funnel-close hidden" id="funnelClose">×</button></div>
+      <div class="funnel-options" id="funnelOptions"></div>
+    </section>
+
+    <section class="benefits container">
+      <div><span>01</span><div><b>Compra segura</b><small>Checkout protegido</small></div></div>
+      <div><span>02</span><div><b>Produtos selecionados</b><small>Curadoria profissional</small></div></div>
+      <div><span>03</span><div><b>Atendimento</b><small>WhatsApp rápido</small></div></div>
+      <div><span>04</span><div><b>Retire como preferir</b><small>Presencial ou Uber</small></div></div>
+    </section>
+
+    <section class="products-section container" id="produtos">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">CATÁLOGO RELPPS</span>
+          <h2>Encontre seus produtos</h2>
+        </div>
+        <span class="catalog-count" id="catalogCount">Todos os produtos</span>
+      </div>
+      <div class="catalog-filters" aria-label="Filtros do catálogo">
+        <div class="catalog-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="catalogSearch" type="search" placeholder="Buscar produto, marca ou variação..." autocomplete="off">
+        </div>
+        <select id="areaFilter" aria-label="Escolher área">
+          <option value="">Todas as áreas</option>
+          <option value="unhas">Unhas</option>
+          <option value="cilios">Cílios</option>
+          <option value="sobrancelhas">Sobrancelhas</option>
+          <option value="equipamentos">Equipamentos</option>
+        </select>
+        <select id="categoryFilter" aria-label="Escolher categoria">
+          <option value="">Todas as categorias</option>
+          <option value="géis">Géis</option>
+          <option value="colas">Colas</option>
+          <option value="preparadores">Preparadores</option>
+          <option value="esmaltes">Esmaltes</option>
+          <option value="top coat">TOP COAT</option>
+          <option value="finalizadores">Finalizadores para Cílios</option>
+          <option value="higienizadores">Higienizadores</option>
+          <option value="ferramentas">Ferramentas</option>
+          <option value="combos">Combos</option>
+          <option value="cílios">Cílios</option>
+          <option value="henna">Henna</option>
+          <option value="laminação">Laminação</option>
+          <option value="sobrancelhas">Sobrancelhas</option>
+        </select>
+        <select id="brandFilter" aria-label="Escolher marca">
+          <option value="">Todas as marcas</option>
+          <option value="badpink">Bad Pink</option>
+          <option value="fadvan">Fadvan</option>
+          <option value="bluwe">Bluwe</option><option value="mariasasha">Maria Sasha</option><option value="cuccio">Cuccio</option><option value="repos">Repós</option><option value="melhormed">Melhormed</option>
+          <option value="uzenails">Uze Nails</option>
+          <option value="beautify">Beautify</option>
+          <option value="cherry">Cherry</option>
+          <option value="elite premium">Elite Premium</option>
+          <option value="sky rose">Sky Rose</option>
+          <option value="master">Master</option>
+        </select>
+        <button class="filter-reset" id="clearFilter" type="button">Limpar filtros</button>
+      </div>
+      <div class="catalog-categories" aria-label="Categorias rápidas">
+        <button type="button" class="catalog-chip active" data-filter-area="">Todos</button>
+        <button type="button" class="catalog-chip" data-filter-area="unhas">Unhas</button>
+        <button type="button" class="catalog-chip" data-filter-area="cilios">Cílios</button>
+        <button type="button" class="catalog-chip" data-filter-area="sobrancelhas">Sobrancelhas</button>
+        <button type="button" class="catalog-chip" data-filter-area="equipamentos">Equipamentos</button>
+        <button type="button" class="catalog-chip catalog-chip-kit" data-filter-area="unhas" data-filter-category="kits">Kits Unhas</button>
+        <button type="button" class="catalog-chip catalog-chip-kit" data-filter-area="cilios" data-filter-category="kits">Kits Cílios</button>
+        <button type="button" class="catalog-chip catalog-chip-kit" data-filter-area="sobrancelhas" data-filter-category="kits">Kits Sobrancelhas</button>
+        <button type="button" class="catalog-chip" data-filter-category="géis">Géis</button>
+        <button type="button" class="catalog-chip" data-filter-category="colas">Colas</button>
+        <button type="button" class="catalog-chip" data-filter-category="preparadores">Preparadores</button>
+        <button type="button" class="catalog-chip" data-filter-category="esmaltes">Esmaltes</button>
+        <button type="button" class="catalog-chip" data-filter-area="unhas" data-filter-category="top coat">TOP COAT</button>
+        <button type="button" class="catalog-chip" data-filter-area="cilios" data-filter-category="finalizadores">Finalizadores Cílios</button>
+        <button type="button" class="catalog-chip" data-filter-category="ferramentas">Ferramentas</button>
+      </div>
+      <div id="productGrid" class="product-grid"></div>
+      <nav id="catalogPagination" class="catalog-pagination hidden" aria-label="Paginação dos produtos"></nav>
+      <div id="emptyState" class="empty-state hidden">Nenhum produto encontrado.</div>
+    </section>
+
+    <section class="brands container" id="marcas">
+      <div class="section-heading centered">
+        <span class="eyebrow">CURADORIA</span>
+        <h2>Marcas em destaque</h2>
+      </div>
+      <div class="brand-row brand-marquee" aria-label="Marcas em destaque">
+        <div class="brand-track">
+          <button type="button" data-brand-filter="badpink">Bad Pink</button><button type="button" data-brand-filter="fadvan">Fadvan</button><button type="button" data-brand-filter="bluwe">Bluwe</button><button type="button" data-brand-filter="uzenails">Uze Nails</button><button type="button" data-brand-filter="repos">Repós</button><button type="button" data-brand-filter="beautify">Beautify</button><button type="button" data-brand-filter="cherry">Cherry</button><button type="button" data-brand-filter="elitepremium">Elite Premium</button><button type="button" data-brand-filter="skyrose">Sky Rose</button><button type="button" data-brand-filter="master">Master Elite</button><button type="button" data-brand-filter="volia">Vòlia</button><button type="button" data-brand-filter="mariasasha">Maria Sasha</button><button type="button" data-brand-filter="cuccio">Cuccio</button><button type="button" data-brand-filter="melhormed">Melhormed</button>
+          <button type="button" data-brand-filter="badpink" aria-hidden="true" tabindex="-1">Bad Pink</button><button type="button" data-brand-filter="fadvan" aria-hidden="true" tabindex="-1">Fadvan</button><button type="button" data-brand-filter="bluwe" aria-hidden="true" tabindex="-1">Bluwe</button><button type="button" data-brand-filter="uzenails" aria-hidden="true" tabindex="-1">Uze Nails</button><button type="button" data-brand-filter="repos" aria-hidden="true" tabindex="-1">Repós</button><button type="button" data-brand-filter="beautify" aria-hidden="true" tabindex="-1">Beautify</button><button type="button" data-brand-filter="cherry" aria-hidden="true" tabindex="-1">Cherry</button><button type="button" data-brand-filter="elitepremium" aria-hidden="true" tabindex="-1">Elite Premium</button><button type="button" data-brand-filter="skyrose" aria-hidden="true" tabindex="-1">Sky Rose</button><button type="button" data-brand-filter="master" aria-hidden="true" tabindex="-1">Master Elite</button><button type="button" data-brand-filter="volia" aria-hidden="true" tabindex="-1">Vòlia</button><button type="button" data-brand-filter="mariasasha" aria-hidden="true" tabindex="-1">Maria Sasha</button><button type="button" data-brand-filter="cuccio" aria-hidden="true" tabindex="-1">Cuccio</button><button type="button" data-brand-filter="melhormed" aria-hidden="true" tabindex="-1">Melhormed</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="service-section container" id="atendimento">
+      <div class="service-card">
+        <span class="eyebrow">PRECISA DE AJUDA?</span>
+        <h2>Fale com a Relpps</h2>
+        <p>Escolha produtos, tire dúvidas e acompanhe seu pedido pelo WhatsApp.</p>
+        <a id="whatsappCta" class="btn btn-dark" href="#" target="_blank" rel="noopener">ATENDER PELO WHATSAPP</a>
+      </div>
+      <div class="service-card light">
+        <span class="eyebrow">RETIRADA</span>
+        <h2>Você escolhe como receber</h2>
+        <p>Entrega, retirada presencial ou Uber por conta do cliente. As regras aparecem automaticamente no checkout.</p>
+      </div>
+    </section>
+    <section class="promo-banner container promo-banner-final">
+      <div>
+        <span class="eyebrow">CONDIÇÃO ESPECIAL</span>
+        <h2>Condição especial</h2>
+        <p>Desconto de até 5% em compras a partir de R$ 100,00 no Pix ou dinheiro.</p>
+      </div>
+      <span class="promo-seal">ATÉ<br><b>5%</b></span>
+    </section>
+
+    <section class="club-relpps container" id="clube-relpps" aria-labelledby="clubTitle">
+      <div class="club-copy">
+        <span class="eyebrow">PROGRAMA DE FIDELIDADE</span>
+        <h2 id="clubTitle">Club <span>Relpps</span></h2>
+        <p>Sua rotina profissional agora rende ainda mais. Entre para o Club Relpps, acumule pontos em suas compras e desbloqueie benefícios exclusivos em uma experiência premium.</p>
+        <div class="club-discount-note"><span>✦ BENEFÍCIOS EXCLUSIVOS</span><strong>Cupons e benefícios especiais para membros do Club Relpps.</strong><small>Os pontos são acumulados de forma progressiva e os resgates exigem metas maiores para manter os benefícios realmente exclusivos.</small></div>
+        <div class="club-benefits-grid">
+          <div><b>✦ Pontos em compras</b><small>A cada R$ 10,00 em compras confirmadas, você acumula 1 ponto no Club Relpps.</small></div>
+          <div><b>🎁 20 pontos de boas-vindas</b><small>Crie sua conta e comece sua jornada com uma recompensa especial.</small></div>
+          <div><b>🏷️ Cupons exclusivos</b><small>Troque seus pontos por cupons únicos para usar em sua próxima compra.</small></div>
+          <div><b>👑 Níveis Premium</b><small>Avance de Essencial para Gold e Luxe e tenha benefícios especiais.</small></div>
+        </div>
+        <button class="club-join-button" id="clubAccountButton" type="button">ENTRAR NO CLUB RELPPS →</button>
+      </div>
+      <div class="club-panel-preview">
+        <span class="club-panel-kicker">SUA JORNADA</span>
+        <h3>Recompensas que acompanham sua beleza.</h3>
+        <div class="club-tier-preview"><span class="tier-dot active"></span><b>Essencial</b><small>Comece sua jornada</small></div>
+        <div class="club-tier-preview"><span class="tier-dot"></span><b>Gold</b><small>2.000 pontos</small></div>
+        <div class="club-tier-preview"><span class="tier-dot"></span><b>Luxe</b><small>5.000 pontos</small></div>
+        <div class="club-points-preview"><span>SEUS PONTOS</span><strong>20 ✦</strong><small>Boas-vindas para novos membros</small></div>
+        <form class="club-form" id="clubForm">
+          <label class="sr-only" for="clubEmail">Seu melhor e-mail</label>
+          <input id="clubEmail" name="email" type="email" placeholder="Receba novidades por e-mail" autocomplete="email" required>
+          <button type="submit">QUERO RECEBER NOVIDADES</button>
+          <small>Ao se cadastrar, você recebe novidades e condições especiais. O programa de pontos exige uma conta Relpps.</small>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <section class="relpps-store-gallery-section" id="nossa-loja" aria-label="Conheça a loja Relpps">
+    <div class="container">
+      <div class="store-gallery-heading">
+        <span class="eyebrow">NOSSA LOJA</span>
+        <h2>Venha conhecer a Relpps de perto.</h2>
+        <p>Produtos, variedade e um espaço pensado para quem vive a beleza profissional todos os dias.</p>
+      </div>
+      <div class="relpps-store-gallery">
+        <figure class="store-gallery-card store-gallery-card-main"><img src="./assets/relpps-store-01.jpg" alt="Interior da loja Relpps Cosméticos" loading="lazy"><figcaption>Relpps Cosméticos</figcaption></figure>
+        <figure class="store-gallery-card"><img src="./assets/relpps-store-02.jpg" alt="Produtos e prateleiras da loja Relpps" loading="lazy"><figcaption>Variedade para profissionais</figcaption></figure>
+        <figure class="store-gallery-card"><img src="./assets/relpps-store-03.jpg" alt="Corredor interno da loja Relpps" loading="lazy"><figcaption>Seu espaço de beleza</figcaption></figure>
+        <figure class="store-gallery-card"><img src="./assets/relpps-store-04.jpg" alt="Balcão e produtos da Relpps" loading="lazy"><figcaption>Detalhes que inspiram</figcaption></figure>
+      </div>
+      <div class="relpps-location-card" aria-label="Localização da Relpps Cosméticos">
+        <div class="relpps-location-icon" aria-hidden="true">⌖</div>
+        <div class="relpps-location-copy"><span class="eyebrow">VISITE A RELPPS</span><h3>Relpps Cosméticos</h3><p>Quadra C 12, Área Especial 02, Loja 30<br>Taguatinga Centro, Brasília - DF · CEP 72010-901</p><small>Venha nos visitar e encontre de perto tudo para sua rotina de beleza profissional.</small></div>
+        <a class="relpps-location-map" href="https://www.google.com/maps/search/?api=1&amp;query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener">ABRIR NO GOOGLE MAPS <span>↗</span></a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-main container">
+      <img src="./assets/logo.png" alt="Relpps Cosméticos" class="footer-logo" loading="lazy">
+      <div><h4>Loja</h4><a href="#produtos">Produtos</a><a href="#categorias">Categorias</a><a href="#marcas">Marcas</a></div>
+      <div><h4>Atendimento</h4><a href="#atendimento">WhatsApp</a><a href="#" id="footerCheckoutLink">Entrega e retirada</a><a href="#">Política de troca</a></div>
+      <div><h4>Pagamento</h4><p>Pix • Dinheiro • Cartão</p></div>
+    </div>
+    <div class="footer-bottom">© <span id="year"></span> Relpps Cosméticos. Todos os direitos reservados.</div>
+  </footer>
+
+  <div class="floating-actions" aria-label="Ações rápidas">
+<button class="floating-cart" id="floatingCart" type="button" aria-label="Abrir carrinho">
+      <span class="cart-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></span><span>Meu carrinho</span><em id="floatingCount">0</em>
+    </button>
+  </div>
+
+  <div class="modal-backdrop hidden" id="productModal">
+    <div class="product-modal">
+      <button class="modal-close" data-close="productModal">×</button>
+      <div class="modal-product-grid">
+        <div class="modal-image-wrap"><img id="modalImage" src="" alt=""></div>
+        <div class="modal-info">
+          <span id="modalCategory" class="eyebrow"></span>
+          <h2 id="modalName"></h2>
+          <p id="modalDescription"></p>
+          <div id="variationArea"></div>
+          <div class="modal-price"><strong id="modalPrice"></strong><small id="modalStock"></small></div>
+          <button class="btn btn-gold full" id="modalAdd">ADICIONAR AO CARRINHO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="drawer-header"><div><span class="eyebrow">SEU PEDIDO</span><h3>Carrinho</h3></div><button id="closeCart">×</button></div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-related-wrap" id="cartRelatedWrap">
+      <div class="cart-related-head"><div><span class="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span><h4>Produtos relacionados</h4></div><div class="cart-related-controls"><button class="cart-related-arrow" id="cartRelatedPrev" type="button" aria-label="Produtos anteriores">‹</button><button class="cart-related-arrow" id="cartRelatedNext" type="button" aria-label="Próximos produtos">›</button><button class="cart-continue-link" id="cartContinueTop" type="button">Ver mais</button></div></div>
+      <div class="cart-related-viewport"><div id="cartRelated" class="cart-related"></div></div>
+    </div>
+    <div class="drawer-summary">
+      <div><span>Subtotal</span><b id="cartSubtotal">R$ 0,00</b></div>
+      <div class="total"><span>Total</span><strong id="cartTotal">R$ 0,00</strong></div>
+      <div class="cart-checkout-actions">
+        <button class="btn btn-light cart-continue" id="continueShoppingButton" type="button">CONTINUAR COMPRANDO</button>
+        <button class="btn btn-dark" id="checkoutButton">FINALIZAR COMPRA</button>
+      </div>
+      <button class="cart-back-site" id="backToSiteButton" type="button">← Voltar ao site</button>
+    </div>
+  </aside>
+  <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+
+
+
+
+  <!-- Confirmação premium ao adicionar produto -->
+  <div class="added-modal-backdrop hidden" id="addedToCartModal" role="dialog" aria-modal="true" aria-labelledby="addedToCartTitle">
+    <section class="added-modal">
+      <button class="added-modal-close" id="addedToCartClose" type="button" aria-label="Fechar">×</button>
+      <div class="added-modal-success"><span>✓</span><div><strong id="addedToCartTitle">Adicionado ao carrinho!</strong><p id="addedToCartProductName">Produto adicionado com sucesso.</p></div></div>
+      <div class="added-related-head"><div><span class="eyebrow">VOCÊ TAMBÉM PODE GOSTAR</span><h3>Produtos relacionados</h3></div><div class="added-related-nav"><button type="button" id="addedRelatedPrev" aria-label="Anterior">‹</button><button type="button" id="addedRelatedNext" aria-label="Próximo">›</button></div></div>
+      <div class="added-related-track-wrap"><div class="added-related-track" id="addedRelatedTrack"></div></div>
+      <div class="added-modal-actions"><button class="btn btn-light" id="addedContinueShopping" type="button">CONTINUAR COMPRANDO</button><button class="btn btn-dark" id="addedGoCart" type="button">IR PARA SEUS PEDIDOS →</button></div>
+    </section>
+  </div>
+
+  <!-- Página dedicada do produto -->
+  <section class="product-detail-page hidden" id="productPage" aria-hidden="true">
+    <header class="product-page-header">
+      <button class="product-page-back" id="productPageBack" type="button">← Voltar para os produtos</button>
+      <a class="product-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <button class="product-page-cart" id="productPageCart" type="button">🛍️ <span>Meu carrinho</span><em id="productPageCartCount">0</em></button>
+    </header>
+    <main class="product-page-main">
+      <button class="mobile-site-home" id="productPageHomeMobile" type="button">⌂ Voltar ao site</button>
+      <nav class="product-breadcrumb" aria-label="Navegação"><button type="button" id="productBreadcrumbHome">Início</button><span>›</span><span id="productPageArea">Produtos</span><span>›</span><strong id="productPageCrumb">Produto</strong></nav>
+      <div class="product-page-grid">
+        <section class="product-gallery" aria-label="Galeria do produto">
+          <div class="product-thumbnails" id="productThumbnails"></div>
+          <div class="product-main-media">
+            <button class="gallery-arrow gallery-prev" id="productGalleryPrev" type="button" aria-label="Foto anterior">‹</button>
+            <img id="productPageImage" src="" alt="">
+            <button class="gallery-arrow gallery-next" id="productGalleryNext" type="button" aria-label="Próxima foto">›</button>
+            <span class="product-image-badge" id="productImageBadge">Foto 1</span>
+          </div>
+        </section>
+        <section class="product-buy-panel">
+          <div class="product-page-meta"><span class="eyebrow" id="productPageCategory"></span><span class="product-brand" id="productPageBrand"></span></div>
+          <div class="product-rating-line"><span class="stars" id="productPageStars">★★★★★</span><button type="button" id="productReviewJump">Ver avaliações</button></div>
+          <h1 id="productPageName"></h1>
+          <p class="product-page-description" id="productPageDescription"></p>
+          <div class="product-price-block"><small>Por apenas</small><strong id="productPagePrice"></strong><span id="productPageStock"></span></div>
+          <div id="productPageVariations" class="product-page-variations"></div>
+          <div class="product-buy-actions">
+            <div class="product-qty-control"><button type="button" id="productQtyMinus">−</button><span id="productQtyValue">1</span><button type="button" id="productQtyPlus">+</button></div>
+            <button class="btn btn-gold product-add-main" id="productPageAdd" type="button">ADICIONAR AO CARRINHO</button>
+          </div>
+          <button class="product-favorite-button" id="productFavoriteButton" type="button"><span>♡</span> Salvar produto</button>
+          <div class="product-trust-mini"><span>🔒 Compra segura</span><span>↺ Troca facilitada</span><span>✦ Produtos selecionados</span></div>
+        </section>
+      </div>
+
+      <section class="product-info-tabs-section">
+        <div class="product-tabs" role="tablist">
+          <button class="active" type="button" data-product-tab="description">Descrição</button>
+          <button type="button" data-product-tab="details">Detalhes do produto</button>
+          <button type="button" data-product-tab="shipping">Entrega e retirada</button>
+        </div>
+        <div class="product-tab-panel active" data-product-panel="description" id="productTabDescription"></div>
+        <div class="product-tab-panel" data-product-panel="details" id="productTabDetails"></div>
+        <div class="product-tab-panel" data-product-panel="shipping"><div class="shipping-copy-grid"><article><b>🚚 Entrega</b><p>Informe o CEP no checkout para escolher Uber Entregas ou Correios.</p></article><article><b>🏪 Retirada</b><p>Escolha retirada presencial ou retirada via Uber por conta do cliente.</p></article><article><b>🔐 Compra segura</b><p>O pagamento será exibido somente na última etapa do checkout.</p></article></div></div>
+      </section>
+
+      <section class="product-reviews" id="productReviews">
+        <div class="reviews-heading"><div><span class="eyebrow">AVALIAÇÕES</span><h2>O que os clientes estão dizendo</h2></div><div class="reviews-score"><strong id="productReviewAverage">5,0</strong><span><b>★★★★★</b><small id="productReviewCount">0 avaliações</small></span></div></div>
+        <div class="review-list" id="productReviewList"></div>
+        <form class="review-form" id="productReviewForm">
+          <div><span class="eyebrow">SUA EXPERIÊNCIA</span><h3>Avalie este produto</h3><p>Compartilhe sua experiência para ajudar outros clientes.</p></div>
+          <div class="review-form-fields">
+            <label>Nota<select id="reviewRating" required><option value="5">★★★★★ — 5</option><option value="4">★★★★ — 4</option><option value="3">★★★ — 3</option><option value="2">★★ — 2</option><option value="1">★ — 1</option></select></label>
+            <label>Seu comentário<textarea id="reviewComment" rows="4" required minlength="8" placeholder="Conte como foi sua experiência com o produto"></textarea></label>
+            <label class="review-photo-field">Fotos da sua experiência <span>(opcional, até 4)</span><input id="reviewPhotos" type="file" accept="image/*" multiple><small>Você pode adicionar fotos do produto para ajudar outros clientes.</small></label>
+            <div class="review-photo-preview" id="reviewPhotoPreview" aria-live="polite"></div>
+            <button class="btn btn-dark" type="submit">PUBLICAR AVALIAÇÃO</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </section>
+
+  <section class="full-cart-page hidden" id="cartPage" aria-hidden="true">
+    <header class="cart-page-header">
+      <button class="cart-page-back" id="cartPageBack" type="button">← Continuar comprando</button>
+      <a class="cart-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <div class="cart-page-safe">🔒 Compra segura<br><small>Seus dados protegidos</small></div>
+    </header>
+    <main class="cart-page-main">
+      <div class="cart-page-title"><button class="mobile-site-home" id="cartPageHomeMobile" type="button">⌂ Voltar ao site</button>><span class="eyebrow">SEU PEDIDO</span><h1>Meu carrinho</h1><p>Revise seus produtos e escolha a melhor forma de receber.</p></div>
+      <div class="cart-page-grid">
+        <section class="cart-page-products-card">
+          <div class="cart-page-card-head"><h2>Produtos</h2><span id="cartPageCountLabel">0 itens</span></div>
+          <div id="cartPageItems" class="cart-page-items"></div>
+        </section>
+        <aside class="cart-page-summary-card">
+          <h2>Frete</h2>
+          <p class="cart-page-helper">Digite seu CEP para ver somente as duas opções disponíveis.</p>
+          <div class="cart-page-cep"><input id="cartPageCep" inputmode="numeric" maxlength="9" placeholder="Digite seu CEP"><button id="cartPageQuoteButton" type="button">Calcular</button></div>
+          <label class="cart-page-pickup-choice" id="cartPagePickupChoice"><input type="radio" name="cartPageReceiveMode" value="pickup"><span class="pickup-choice-icon">🏪</span><span><b>Retirada</b><small>Escolha no checkout entre retirada presencial ou Uber por conta do cliente.</small></span></label>
+          <label class="cart-page-delivery-choice"><input type="radio" name="cartPageReceiveMode" value="delivery" checked><span class="pickup-choice-icon">🚚</span><span><b>Entrega</b><small>Calcule o CEP e escolha Uber Entregas ou Correios.</small></span></label>
+          <div id="cartPageShippingOptions" class="cart-page-shipping"><div class="cart-page-shipping-empty">Informe seu CEP para calcular Uber Entregas e Correios.</div></div>
+          <div class="cart-page-total-box">
+            <div><span>Subtotal</span><b id="cartPageSubtotal">R$ 0,00</b></div>
+            <div><span>Frete</span><b id="cartPageShipping">—</b></div>
+            <div class="cart-page-grand"><span>Total do pedido</span><strong id="cartPageTotal">R$ 0,00</strong></div>
+          </div>
+          <button class="btn btn-gold full cart-page-continue" id="cartPageContinue" type="button">Continuar</button>
+          <small class="cart-page-bottom-note">Você poderá informar seus dados e escolher entrega ou retirada na próxima etapa.</small>
+        </aside>
+      </div>
+    </main>
+  </section>
+
+  <section class="full-checkout-page hidden" id="checkoutModal" aria-hidden="true">
+    <header class="checkout-page-header">
+      <button class="checkout-page-back" id="checkoutPageBack" type="button">← Voltar ao carrinho</button>
+      <a class="checkout-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <div class="checkout-page-safe">🔒 Compra segura<br><small>Dados protegidos e pedido seguro</small></div>
+    </header>
+    <main class="checkout-page-main">
+      <div class="checkout-page-title"><button class="mobile-site-home" id="checkoutPageHomeMobile" type="button">⌂ Voltar ao site</button>><span class="eyebrow">CHECKOUT RELPPS</span><h1>Finalize seu pedido</h1><p>Escolha como deseja receber e conclua sua compra com segurança.</p><div class="checkout-progress" aria-label="Etapas do checkout"><span class="active">1. Seus dados</span><i></i><span>2. Recebimento</span><i></i><span>3. Pagamento</span></div></div>
+      <form id="checkoutForm" novalidate>
+        <div class="checkout-layout checkout-page-layout">
+          <div class="checkout-form-column">
+
+            <section class="checkout-stage is-active" data-checkout-stage="1" id="checkoutStageData">
+              <div class="form-section checkout-step-card">
+                <div class="section-heading-row"><div><h3>1. Seus dados</h3><p class="micro-note">Confira seus dados para acompanhar seu pedido.</p></div><span class="checkout-step-badge">01</span></div>
+                <div class="form-grid">
+                  <label>Nome completo<input name="name" required autocomplete="name"></label>
+                  <label>CPF<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"></label>
+                  <label>E-mail<input name="email" type="email" required autocomplete="email"></label>
+                  <label>WhatsApp<input name="phone" required inputmode="tel" autocomplete="tel"></label>
+                </div>
+                <div class="checkout-stage-actions stage-one-actions"><span>Seus dados ficam protegidos e são usados apenas para o seu pedido.</span><button class="btn btn-gold checkout-stage-next" id="checkoutToReceive" type="button">CONTINUAR PARA RECEBIMENTO →</button></div>
+              </div>
+            </section>
+
+            <section class="checkout-stage" data-checkout-stage="2" id="checkoutStageReceive">
+              <div class="form-section checkout-step-card">
+                <div class="section-heading-row"><div><h3>2. Como você quer receber?</h3><p class="micro-note">Escolha a forma de recebimento. Para entrega, informe o CEP logo abaixo.</p></div><span class="checkout-step-badge">02</span></div>
+                <div class="fulfillment-flow">
+                  <div class="fulfillment-group"><div class="fulfillment-title"><span>🚚</span><div><b>Entrega</b><small>Receba no endereço informado</small></div></div><div class="delivery-options nested">
+                    <label class="delivery-option"><input type="radio" name="delivery" value="melhor_envio" checked><span class="delivery-icon">📦</span><span><b>Correios</b><small>Envio para todo o Brasil</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="uber"><span class="delivery-icon">🛵</span><span><b>Uber Entregas</b><small>Entrega rápida na sua região</small></span></label>
+                  </div></div>
+                  <div class="fulfillment-group"><div class="fulfillment-title"><span>🏪</span><div><b>Retirada</b><small>Escolha a forma de retirada</small></div></div><div class="delivery-options nested">
+                    <label class="delivery-option"><input type="radio" name="delivery" value="pickup"><span class="delivery-icon">🤝</span><span><b>Retirada presencial</b><small>Retire após a confirmação</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="pickup_uber"><span class="delivery-icon">🛵</span><span><b>Retirada via Uber</b><small>Uber por conta do cliente</small></span></label>
+                  </div></div>
+                </div>
+                <p class="uber-pickup-note">Para retirada via Uber, aguarde a liberação do pedido. Depois da confirmação, solicite o Uber por sua conta.</p>
+                <div class="store-pickup-card hidden" id="storePickupCard"><span>LOCAL DE RETIRADA</span><b>Relpps Cosméticos</b><p>C 12, Área Especial 02, Loja 30<br>Taguatinga Centro, Brasília – DF<br>CEP 72010-901</p><small id="storePickupNote"></small></div>
+              </div>
+
+              <div class="form-section checkout-step-card checkout-address-step" id="addressFields">
+                <div class="section-heading-row"><div><h3>CEP e endereço</h3><p class="micro-note">Informe o endereço para calcular e escolher sua entrega.</p></div><span class="checkout-step-badge">CEP</span></div>
+                <div class="form-grid">
+                  <label>CEP<div class="input-with-action"><input name="cep" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"><button type="button" id="quoteShippingButton">Calcular frete</button></div></label>
+                  <label>Endereço<input name="address" id="address"></label>
+                  <label>Número<input name="number" id="number"></label>
+                  <label>Complemento<input name="complement" id="complement"></label>
+                  <label>Bairro<input name="district" id="district"></label>
+                  <label>Cidade / UF<input name="city" id="city"></label>
+                </div>
+                <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Calcule o frete pelo CEP</b><span>Somente Uber Entregas e Correios aparecerão aqui.</span></div></div>
+                <p class="micro-note" id="shippingStatusNote">Modo de teste ativo até as credenciais reais serem configuradas.</p>
+              </div>
+              <div class="checkout-stage-actions"><button class="checkout-stage-back" id="checkoutBackToData" type="button">← Voltar para dados</button><button class="btn btn-gold checkout-stage-next" id="checkoutToPayment" type="button">CONTINUAR PARA PAGAMENTO →</button></div>
+            </section>
+
+            <section class="checkout-stage" data-checkout-stage="3" id="checkoutStagePayment">
+              <div class="form-section checkout-step-card checkout-payment-card">
+                <div class="section-heading-row"><div><h3>3. Pagamento</h3><p class="micro-note" id="paymentNote">Escolha como deseja pagar. Nesta etapa o visual está pronto para a integração do checkout real.</p></div><span class="checkout-step-badge">03</span></div>
+                <div class="payment-options" id="paymentOptions"></div>
+                <div class="payment-visual-details hidden" id="paymentVisualDetails"></div>
+                <div class="checkout-coupon-box" id="checkoutCouponBox">
+                  <div><span>CLUB RELPPS</span><b>Tem um código de desconto?</b><small>Use um cupom disponível na sua conta ou informe seu código.</small></div>
+                  <div class="checkout-coupon-form"><input id="checkoutCouponCode" type="text" placeholder="EX.: RELPPS-XXXXX-1234" autocomplete="off"><button id="applyCheckoutCoupon" type="button">APLICAR</button></div>
+                  <div class="checkout-coupon-status" id="checkoutCouponStatus">Nenhum cupom aplicado.</div>
+                </div>
+                <div class="payment-secure-strip">🔒 Ambiente protegido • Os dados de pagamento serão processados pelo provedor seguro configurado na próxima etapa.</div>
+              </div>
+              <div class="checkout-stage-actions payment-stage-actions"><button class="checkout-stage-back" id="checkoutBackToReceive" type="button">← Voltar para recebimento</button><span>Revise sua forma de pagamento antes de finalizar.</span></div>
+            </section>
+          </div>
+
+          <aside class="checkout-summary checkout-page-summary">
+            <div class="checkout-status-card"><span>STATUS DO PEDIDO</span><b id="checkoutOrderStatus">Aguardando pagamento</b><small>Seu pedido será criado com segurança antes da confirmação do pagamento.</small></div>
+            <h3>Resumo do pedido</h3>
+            <div id="checkoutSummaryItems"></div>
+            <div class="summary-line"><span>Frete</span><b id="checkoutShipping">Calcule o CEP</b></div>
+            <div class="summary-line checkout-discount-line hidden" id="checkoutDiscountLine"><span>Desconto</span><b id="checkoutDiscount">− R$ 0,00</b></div>
+            <div class="summary-total"><span>Total</span><strong id="checkoutTotal"></strong></div>
+            <button class="btn btn-gold full checkout-final-button hidden" type="button" id="checkoutSubmitButton">CONTINUAR PARA O PAGAMENTO</button>
+            <div class="checkout-stage-summary-hint" id="checkoutStageSummaryHint">Complete seus dados para avançar para a próxima etapa.</div>
+            <button class="checkout-whatsapp-link" id="checkoutWhatsAppButton" type="button">💬 Preciso de ajuda pelo WhatsApp</button>
+            <p class="micro-note">🔒 Compra segura. Seus dados são usados apenas para processar e acompanhar o pedido.</p>
+          </aside>
+        </div>
+      </form>
+    </main>
+  </section>
+
+  <div class="modal-backdrop hidden" id="paymentModal">
+    <div class="simple-modal payment-result-modal">
+      <button class="modal-close" data-close="paymentModal">×</button>
+      <span class="eyebrow">PEDIDO CRIADO</span>
+      <h2 id="paymentResultTitle">Aguardando pagamento</h2>
+      <p id="paymentResultText"></p>
+      <div id="paymentResultActions"></div>
+    </div>
+  </div>
+
+  <section class="minha-relpps-page hidden" id="minhaRelppsPage" aria-hidden="true">
+    <header class="minha-relpps-header"><button type="button" id="minhaRelppsBack">← Ir para as compras</button><div class="minha-relpps-logo">Club Relpps</div><button type="button" id="minhaRelppsLogout">Sair da conta</button></header>
+    <main class="minha-relpps-main">
+      <section class="minha-relpps-hero"><div><span class="eyebrow">CLUB RELPPS</span><h1>Olá, <span id="minhaRelppsName">Cliente</span></h1><p class="minha-relpps-animated-sub">Seu espaço exclusivo de benefícios, pontos e recompensas.</p></div><div class="minha-relpps-tier-orb"><small>NÍVEL</small><b id="minhaRelppsTier">Essencial</b><span>✦</span></div></section>
+      <section class="club-suggest-products" aria-labelledby="clubSuggestTitle">
+        <div class="club-suggest-head"><div><span class="eyebrow">GANHE MAIS PONTOS</span><h2 id="clubSuggestTitle">Sugestões para sua próxima compra.</h2><p>Escolha seus favoritos e continue acumulando pontos no Club Relpps.</p></div><button type="button" class="club-suggest-all" id="clubSuggestAll">VER CATÁLOGO →</button></div>
+        <div class="club-suggest-grid">
+          <button type="button" class="club-suggest-card" data-club-catalog="unhas"><img src="./assets/category-unhas.png" alt="Produtos para unhas"><span>UNHAS</span><b>Géis, esmaltes e preparadores</b><small>Explore e acumule pontos</small></button>
+          <button type="button" class="club-suggest-card" data-club-catalog="cilios"><img src="./assets/category-cilios.png" alt="Produtos para cílios"><span>CÍLIOS</span><b>Extensão, colas e acessórios</b><small>Escolha seus favoritos</small></button>
+          <button type="button" class="club-suggest-card" data-club-catalog="sobrancelhas"><img src="./assets/category-sobrancelhas.png" alt="Produtos para sobrancelhas"><span>SOBRANCELHAS</span><b>Design, henna e brow</b><small>Complete seu kit</small></button>
+          <button type="button" class="club-suggest-card" data-club-catalog="equipamentos"><img src="./assets/category-equipamentos.jpg" alt="Equipamentos profissionais"><span>EQUIPAMENTOS</span><b>Praticidade para atender</b><small>Invista no seu espaço</small></button>
+        </div>
+      </section>
+      <section class="minha-relpps-grid">
+        <article class="minha-relpps-points-card"><span>PONTOS DISPONÍVEIS</span><strong id="minhaRelppsPoints">0 ✦</strong><p id="minhaRelppsProgress">Suas próximas compras podem desbloquear novos benefícios.</p><div class="minha-relpps-progress"><i id="minhaRelppsProgressBar"></i></div><small id="minhaRelppsNextTier">Continue sua jornada.</small></article>
+        <article class="minha-relpps-profile-card"><span>MINHA CONTA</span><b id="minhaRelppsEmail"></b><p id="minhaRelppsAddress">Seus dados ficam salvos para facilitar suas próximas compras.</p><div class="minha-relpps-profile-actions"><button type="button" id="minhaRelppsUseData">USAR MEUS DADOS</button></div></article>
+      </section>
+      <section class="minha-relpps-rewards"><div class="minha-relpps-section-head"><div><span class="eyebrow">RECOMPENSAS</span><h2>Benefícios que acompanham sua jornada.</h2></div><small>Os resgates são progressivos para manter a exclusividade do Club Relpps.</small></div><div class="club-reward-grid" id="minhaRelppsRewards"></div></section>
+      <section class="minha-relpps-coupons"><div><span class="eyebrow">MEUS CUPONS</span><h2>Disponíveis para você</h2><p id="minhaRelppsCouponEmpty">Quando você conquistar ou resgatar um benefício, ele aparecerá aqui.</p></div><div id="minhaRelppsCouponList" class="minha-relpps-coupon-list"></div></section>
+    </main>
+  </section>
+  <div class="welcome-relpps-overlay hidden" id="welcomeRelppsOverlay"><div class="welcome-relpps-card"><span>✦</span><small>CLUB RELPPS</small><h2>Seja bem-vinda ao Club Relpps</h2><p>Aqui você acumula pontos, desbloqueia benefícios e aproveita vantagens exclusivas.</p></div></div>
+
+  <div class="modal-backdrop hidden" id="accountModal">
+    <div class="simple-modal account-modal">
+      <aside class="account-visual" aria-hidden="true">
+        <img src="./assets/relpps-login-visual.jpg" alt="Conheça a Relpps Cosméticos">
+        <div class="account-visual-overlay"></div>
+        <div class="account-visual-badge"><span>✦</span><b>RELPP'S</b><small>cosméticos</small></div>
+      </aside>
+      <button class="modal-close" data-close="accountModal">×</button>
+      <span class="eyebrow">RELPP'S</span>
+      <h2 id="accountTitle">Minha conta</h2>
+      <p id="accountIntro">Seus dados e endereço ficam prontos para as próximas compras.</p>
+
+      <div class="account-tabs">
+        <button type="button" class="account-tab active" data-account-tab="login">ENTRAR</button>
+        <button type="button" class="account-tab" data-account-tab="register">CRIAR MINHA CONTA</button>
+      </div>
+
+      <form id="loginForm" class="account-form">
+        <label>E-mail<input id="loginEmail" name="email" type="email" autocomplete="email" required></label>
+        <label>Senha<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="btn btn-dark full" type="submit">ENTRAR</button>
+        <p class="account-status" id="loginStatus"></p>
+      </form>
+
+      <form id="registerForm" class="account-form hidden">
+        <div class="form-grid">
+          <label>Nome completo<input name="name" required autocomplete="name"></label>
+          <label>CPF<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></label>
+          <label>E-mail<input name="email" type="email" required autocomplete="email"></label>
+          <label>WhatsApp<input name="phone" required inputmode="tel" autocomplete="tel"></label>
+          <label>Senha<input name="password" type="password" minlength="6" required autocomplete="new-password"></label>
+          <label>Confirmar senha<input name="passwordConfirm" type="password" minlength="6" required autocomplete="new-password"></label>
+          <label>CEP<input name="cep" id="accountCep" inputmode="numeric" placeholder="00000-000"></label>
+          <label>Endereço<input name="address" id="accountAddress" autocomplete="street-address"></label>
+          <label>Número<input name="number" id="accountNumber" autocomplete="address-line2"></label>
+          <label>Complemento<input name="complement" id="accountComplement"></label>
+          <label>Bairro<input name="district" id="accountDistrict"></label>
+          <label>Cidade / UF<input name="city" id="accountCity" autocomplete="address-level2"></label>
+        </div>
+        <button class="btn btn-gold full" type="submit">CRIAR MINHA CONTA</button>
+        <p class="account-status" id="registerStatus"></p>
+      </form>
+
+      <div class="account-saved hidden" id="accountSaved">
+        <div class="account-welcome">
+          <span class="eyebrow">BEM-VINDO DE VOLTA</span>
+          <h3 id="savedName">Cliente</h3>
+          <p id="savedEmail"></p>
+        </div>
+        <div class="saved-address" id="savedAddress"></div>
+        <section class="club-account-dashboard" id="clubAccountDashboard" aria-label="Club Relpps">
+          <div class="club-dashboard-head"><div><span class="eyebrow">CLUB RELPPS</span><h3>Seu cuidado rende recompensas.</h3></div><span class="club-tier-badge" id="clubTierBadge">Essencial</span></div>
+          <div class="club-points-main"><div><small>PONTOS DISPONÍVEIS</small><strong id="clubPointsBalance">0 ✦</strong><span id="clubPointsProgressText">Comece sua jornada no Club Relpps.</span></div><div class="club-progress-wrap"><div class="club-progress"><span id="clubProgressBar"></span></div><small id="clubNextTierText">Acumule pontos para chegar ao próximo nível.</small></div></div>
+          <div class="club-reward-grid">
+            <button type="button" class="club-reward-card" data-reward-points="800" data-reward-value="10"><b>800 ✦</b><span>R$ 10 OFF</span><small>Meta Essencial</small></button>
+            <button type="button" class="club-reward-card" data-reward-points="2000" data-reward-value="30"><b>2.000 ✦</b><span>R$ 30 OFF</span><small>Meta Gold</small></button>
+            <button type="button" class="club-reward-card" data-reward-points="5000" data-reward-value="90"><b>5.000 ✦</b><span>R$ 90 OFF</span><small>Meta Luxe</small></button>
+            <button type="button" class="club-reward-card" data-reward-points="9000" data-reward-value="180"><b>9.000 ✦</b><span>R$ 180 OFF</span><small>Benefício Signature</small></button>
+          </div>
+          <div class="club-coupons"><div><b>Meus cupons</b><small id="clubCouponEmpty">Nenhum cupom resgatado ainda.</small></div><div id="clubCouponList"></div></div>
+          <small class="club-note">Os pontos de compra são confirmados somente após a integração de pagamento e a confirmação do pedido.</small>
+        </section>
+        <div class="account-actions">
+          <button class="btn btn-dark" id="useAccountButton" type="button">USAR MEUS DADOS NA COMPRA</button>
+          <button class="text-button" id="logoutButton" type="button">Sair da conta</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./assets/bling-products-cache.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

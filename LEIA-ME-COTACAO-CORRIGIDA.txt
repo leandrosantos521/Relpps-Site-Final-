@@ -1,0 +1,12 @@
+COTAÇÃO CORRIGIDA
+
+No modo de teste, a cotação agora funciona diretamente no navegador.
+Você pode abrir em Live Server (127.0.0.1:5500) e clicar em Calcular frete: não depende da Netlify Function.
+
+Quando for ativar APIs reais:
+1. Altere CHECKOUT_TEST_MODE para false.
+2. Rode o projeto com: npm start
+   ou publique no Netlify.
+3. Configure as credenciais reais nas variáveis de ambiente do Netlify.
+
+O modo de teste continua mostrando PAC, SEDEX e Uber Moto simulados para validar o fluxo do checkout.

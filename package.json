@@ -1,0 +1,14 @@
+{
+  "name": "relpps-cosmeticos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Loja Relpps Cosméticos com Netlify Functions e integração Bling",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "serve": "node server.js"
+  }
+}
