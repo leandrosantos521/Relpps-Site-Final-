@@ -125,3 +125,15 @@ alter table public.relpps_orders enable row level security;
 alter table public.relpps_orders add column if not exists infinitepay_transaction_nsu text;
 alter table public.relpps_orders add column if not exists infinitepay_invoice_slug text;
 alter table public.relpps_orders add column if not exists infinitepay_receipt_url text;
+
+-- OAuth do Bling em produção (uma única conexão por loja).
+create table if not exists public.relpps_bling_oauth (
+  id integer primary key check (id = 1),
+  access_token text,
+  refresh_token text,
+  token_type text default 'Bearer',
+  expires_in integer,
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table public.relpps_bling_oauth enable row level security;
