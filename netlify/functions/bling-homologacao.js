@@ -88,8 +88,11 @@ async function apiRequest(path, method, body, state, homologationHash) {
     const nextHash = response.headers.get("x-bling-homologacao") || homologationHash || null;
 
     if (!response.ok) {
+      // Preserve os detalhes completos de validação devolvidos pelo Bling.
+      // Isso evita esconder o campo exato que causou um HTTP 400.
       const detail = data?.error?.description || data?.message || data?.error || data?.raw || `HTTP ${response.status}`;
-      throw new Error(`${method} ${path} falhou (HTTP ${response.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}`);
+      const full = (data && typeof data === "object") ? JSON.stringify(data) : String(detail);
+      throw new Error(`${method} ${path} falhou (HTTP ${response.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}${full !== String(detail) ? ` | resposta=${full}` : ""}`);
     }
 
     return { data, nextHash, status: response.status };
@@ -137,11 +140,16 @@ async function runHomologation() {
   if (!productId) throw new Error("O POST de homologação não retornou o id do produto criado.");
   steps.push({ step: 2, method: "POST", status: postResult.status, seconds: elapsed(startedAt), ok: true, productId });
 
-  // 3) PUT — altera a descrição para "Copo".
-  // A documentação do Bling exige os dados atualizados do produto no body.
-  // Para evitar conflito entre o ID temporário da referência do GET e o ID
-  // criado no POST, o body leva o mesmo ID retornado pelo POST, além do ID no path.
-  const updatedProduct = { ...reference, id: productId, descricao: "Copo" };
+  // 3) PUT — atualiza o produto usando EXATAMENTE o payload aceito pelo endpoint
+  // de homologação. A referência oficial atual do endpoint PUT define somente
+  // nome, preco e codigo no body; o ID fica exclusivamente no path.
+  // Para cumprir a etapa de alteração indicada no guia de homologação,
+  // alteramos o nome para "Copo".
+  const updatedProduct = {
+    nome: "Copo",
+    preco: Number(reference.preco),
+    codigo: String(reference.codigo)
+  };
   const putResult = await apiRequest(`/homologacao/produtos/${encodeURIComponent(productId)}`, "PUT", updatedProduct, state, hash);
   hash = putResult.nextHash;
   steps.push({ step: 3, method: "PUT", status: putResult.status, seconds: elapsed(startedAt), ok: true, productId });
