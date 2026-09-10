@@ -137,8 +137,12 @@ async function runHomologation() {
   if (!productId) throw new Error("O POST de homologação não retornou o id do produto criado.");
   steps.push({ step: 2, method: "POST", status: postResult.status, seconds: elapsed(startedAt), ok: true, productId });
 
-  // 3) PUT — altera somente a descrição para "Copo", mantendo os demais dados.
-  const updatedProduct = { ...reference, descricao: "Copo" };
+  // 3) PUT — altera a descrição para "Copo".
+  // O ID é informado no path pelo Bling e não deve ser reenviado no body.
+  // Enviamos os dados recebidos no GET, removendo apenas o ID do recurso.
+  const updatedProduct = { ...reference };
+  delete updatedProduct.id;
+  updatedProduct.descricao = "Copo";
   const putResult = await apiRequest(`/homologacao/produtos/${encodeURIComponent(productId)}`, "PUT", updatedProduct, state, hash);
   hash = putResult.nextHash;
   steps.push({ step: 3, method: "PUT", status: putResult.status, seconds: elapsed(startedAt), ok: true, productId });
