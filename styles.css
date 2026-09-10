@@ -1669,3 +1669,10 @@ body.mobile-nav-open{overflow:hidden}
   .mobile-site-home{display:none!important}
   .page-home-logo{cursor:pointer!important}
 }
+
+
+.sales-logo-full{display:block;width:min(260px,32vw);height:auto;max-height:78px;object-fit:contain}
+.policy-modal{width:min(900px,94vw);max-height:88vh;overflow:auto;text-align:left}
+.policy-content{line-height:1.7;color:#4d453d;padding-right:6px}.policy-content h3{margin:22px 0 7px;color:#2b2520;font-size:1rem}.policy-content p{margin:0 0 10px}.policy-note{font-size:.82rem;color:#7a6f65;margin-top:22px!important}
+.order-status-card{max-width:760px;margin:40px auto;padding:34px;border:1px solid rgba(180,140,70,.22);border-radius:24px;background:#fff;box-shadow:0 18px 60px rgba(30,20,10,.08)}
+.order-status-card h1{font-size:clamp(2rem,4vw,3.3rem);margin:8px 0 12px}.status-pill{display:inline-flex;padding:8px 12px;border-radius:999px;background:#f5ead5;color:#8b642a;font-weight:700;font-size:.75rem;letter-spacing:.06em}.status-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.status-info{padding:18px;background:#faf8f4;border-radius:16px;margin-top:20px}.status-info p{margin:7px 0}.status-muted{color:#766d65}.admin-card{max-width:520px;margin:60px auto;padding:30px;border:1px solid #e8ded2;border-radius:22px;background:#fff}.admin-card h1{margin-top:0}.admin-card label{display:block;margin:14px 0}.admin-card input{width:100%;box-sizing:border-box;padding:13px;border:1px solid #d8cfc5;border-radius:10px}

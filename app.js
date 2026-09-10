@@ -359,7 +359,7 @@ function productRawDetailRows(p){
     ["Marca",brand||"Relpps"],
     ["Categoria",formatDisplayLabel(p?.category||category||p?.area||"Cosméticos")],
     ["Código",String(raw?.codigo||raw?.codigoPai||p?.id||"—")],
-    ["Disponibilidade",`${Math.max(0,Number(p?.stock)||0)} em estoque`]
+    ["Disponibilidade",(Number(p?.stock)<=5?(Number(p?.stock)>0?"Últimas unidades":"Esgotado"):"Disponível")]
   ];
   const attrs=raw?.dimensoes||raw?.medidas||{};
   if(attrs&&typeof attrs==="object") Object.entries(attrs).forEach(([k,v])=>{if(v!==null&&v!==undefined&&String(v).trim())rows.push([formatDisplayLabel(k),String(v)])});
@@ -690,7 +690,7 @@ function renderProducts(){
     card.innerHTML=`
       <button class="product-image product-detail-trigger" type="button" data-view="${p.id}" aria-label="Ver detalhes de ${p.name}">
         <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=safeImageFallback()">
-        <span class="stock-dot">${soldOut?"Esgotado":`${p.stock} em estoque`}</span>
+        <span class="stock-dot">${soldOut?"Esgotado":(Number(p.stock)<=5?"Últimas unidades":"Disponível")}</span>
       </button>
       <div class="product-info">
         <span class="category">${formatDisplayLabel(p.area||p.category||"")}${p.category&&p.category!==p.area?` · ${formatDisplayLabel(p.category)}`:""}</span>
@@ -795,7 +795,7 @@ function updateModalPrice(){
   if(item?.image){$("#modalImage").src=item.image;$("#modalImage").alt=activeProduct.name;}
   const stock=getVariationStock(activeProduct,selectedVariations);
   $("#modalPrice").textContent=money(getVariationPrice(activeProduct,selectedVariations));
-  $("#modalStock").textContent=stock>0?`${stock} disponíveis`:"Esgotado";
+  $("#modalStock").textContent=stock>0?(stock>0?(Number(stock)<=5?"Últimas unidades":"Disponível"):"Esgotado"):"Esgotado";
   const add=$("#modalAdd"); if(add) add.disabled=stock<=0;
 }
 
@@ -1562,7 +1562,7 @@ function getSelectedDeliveryMethod(){ return $('input[name="delivery"]:checked')
 function isPickupMethod(method){ return method==="pickup" || method==="pickup_uber"; }
 function updateDeliveryUI(){
   const method=getSelectedDeliveryMethod();
-  const needsAddress=!isPickupMethod(method);
+  const needsAddress=method!=="pickup";
   $("#addressFields")?.classList.toggle("hidden",!needsAddress);
   const fields=$("#checkoutForm");
   ["cep","address","number","district","city"].forEach(name=>{ if(fields?.elements[name]) fields.elements[name].required=needsAddress; });
@@ -1681,24 +1681,14 @@ async function quoteShipping(){
 
   const items=cartForShipping();
   try{
-    // MODO DE TESTE: calcula diretamente no navegador.
-    // Assim funciona inclusive em 127.0.0.1:5500, Live Server e outros servidores estáticos.
-    if(CHECKOUT_TEST_MODE || window.RELPPS_CONFIG?.SHIPPING_TEST_MODE===true){
-      const data=buildLocalTestShippingQuotes(cep,items);
-      applyShippingQuoteData(data);
-      const note=$("#shippingStatusNote");
-      if(note) note.textContent="Modo de teste: cotação simulada calculada com sucesso. Não é necessário iniciar servidor ou configurar API nesta etapa.";
-      toast("Cotação calculada com sucesso.");
-      return;
-    }
-
-    // PRODUÇÃO: a chamada é feita pela Netlify Function para manter as chaves protegidas.
+    // Produção: a cotação é calculada no backend, mantendo as credenciais protegidas.
+    // O modo de teste só deve ser ativado conscientemente no ambiente de homologação.
     const subtotal=cart.reduce((a,i)=>a+i.price*i.qty,0);
     const endpoints=["/api/shipping?action=quote","/.netlify/functions/shipping?action=quote"];
     let lastError=null;
     for(const endpoint of endpoints){
       try{
-        const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cep,items,subtotal})});
+        const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cep,items,subtotal,address:$("#address")?.value||"",number:$("#number")?.value||"",complement:$("#complement")?.value||"",district:$("#district")?.value||"",city:$("#city")?.value||""})});
         const text=await r.text();
         let data={};
         try{data=text?JSON.parse(text):{};}catch{throw new Error("Resposta inválida do servidor de frete.");}
@@ -1814,6 +1804,7 @@ async function submitOrder(form){
       setTimeout(()=>{window.location.href=result.paymentUrl;},250);
       return;
     }
+    if(data.payment==="cash" || method==="pickup_uber") { window.location.href=`pedido.html?order=${encodeURIComponent(order.id)}`; return; }
     showPaymentResult(order,data);
     toast(data.payment==="cash"?"Pedido criado e aguardando pagamento na retirada.":"Pedido criado com status Aguardando pagamento.");
   }catch(e){toast(e.message||"Erro ao criar pedido.");}
@@ -2329,7 +2320,7 @@ function refreshProductPageVariationUI(){
   const item=getSelectedVariationItem(productPageActive,productPageVars);
   const price=getVariationPrice(productPageActive,productPageVars), stock=getVariationStock(productPageActive,productPageVars);
   $("#productPagePrice").textContent=money(price);
-  $("#productPageStock").textContent=stock>0?`${stock} unidades disponíveis`:("Esgotado");
+  $("#productPageStock").textContent=stock>0?(stock>0?(Number(stock)<=5?"Últimas unidades":"Disponível"):"Esgotado"):("Esgotado");
   $("#productPageAdd").disabled=stock<=0;
   if(item?.image){const i=productGalleryImages.indexOf(item.image);if(i>=0){productGalleryIndex=i;renderProductGallery();}}
 }
@@ -2430,6 +2421,10 @@ function initProductPage(){
 }
 initProductPage();
 
+// Políticas legais e suporte
+$("#footerPolicyLink")?.addEventListener("click",e=>{e.preventDefault();$("#policyModal")?.classList.remove("hidden");document.body.style.overflow="hidden";});
+$("[data-close=\"policyModal\"]")?.addEventListener("click",()=>{$("#policyModal")?.classList.add("hidden");document.body.style.overflow="";});
+$("#policyModal")?.addEventListener("click",e=>{if(e.target===e.currentTarget){e.currentTarget.classList.add("hidden");document.body.style.overflow="";}});
 
 async function handleCheckoutReturn(){
   const params=new URLSearchParams(location.search);
@@ -2451,6 +2446,7 @@ async function handleCheckoutReturn(){
       order=await getCheckoutOrderStatus(id);
     }
     lastCreatedOrder={id:order.id,status:order.status,paymentStatus:order.paymentStatus,delivery:order.delivery,totals:order.totals};
+    if(order.paymentStatus==="APPROVED" || order.paymentStatus==="FAILED" || order.paymentStatus==="AWAITING_PAYMENT") { window.location.href=`pedido.html?order=${encodeURIComponent(order.id)}`; return; }
     const fakeData={name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente",payment:order.paymentStatus==="APPROVED"?"card":"card"};
     showPaymentResult(lastCreatedOrder,fakeData);
     if(order.paymentStatus==="APPROVED") toast("Pagamento confirmado. Pedido liberado.");

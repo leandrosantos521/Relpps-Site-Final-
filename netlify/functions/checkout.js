@@ -1,5 +1,6 @@
 const {createSaleOrder,setOrderSituation,situationId}=require('./_lib/bling-client');
 const {getOrder,insertOrder,updateOrder,getCoupon,markCouponUsed}=require('./_lib/store');
+const {createDelivery: createUberDelivery,quote: quoteUberDelivery}=require('./_lib/uber-direct');
 
 function json(statusCode,body,headers={}){return{statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...headers},body:JSON.stringify(body)}}
 function orderId(){return `REL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`}
@@ -7,6 +8,8 @@ function isProduction(){return process.env.CHECKOUT_TEST_MODE==='false'}
 function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmeticos.netlify.app').replace(/\/$/,'')}
 function storeConfigured(){return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)}
 function money(v){return Number(Number(v||0).toFixed(2));}
+function adminSecretOk(event,body={}){const expected=String(process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim(); const supplied=String(body.secret||event.headers?.['x-relpps-admin-secret']||event.headers?.['X-Relpps-Admin-Secret']||'').trim(); return Boolean(expected && supplied && supplied===expected);}
+function fulfillmentForCreate(method,payment){ if(method==='pickup_uber') return payment==='cash'?'Aguardando pagamento na retirada':'Aguardando pagamento'; if(method==='pickup') return payment==='cash'?'Aguardando pagamento na retirada':'Aguardando pagamento'; return 'Aguardando pagamento'; }
 
 async function infinitePay(path, options={}){
   const r=await fetch(`https://api.checkout.infinitepay.io${path}`,{
@@ -87,7 +90,7 @@ async function createOrder(body){
     if(!coupon) throw new Error('Cupom inválido, expirado ou já utilizado.');
   }
 
-  const baseOrder={...body,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:'Bloqueado até confirmação do pagamento'};
+  const baseOrder={...body,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:fulfillmentForCreate(body.delivery?.method,payment)};
   if(body.delivery?.method==='pickup') baseOrder.delivery={...(body.delivery||{}),pickupAddress:process.env.STORE_PICKUP_ADDRESS||'C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'};
   const dbRow={
     id,status:'AWAITING_PAYMENT',payment_status:'AWAITING_PAYMENT',payment_method:payment,
@@ -109,6 +112,8 @@ async function createOrder(body){
   }
 
   if(payment==='cash'){
+    baseOrder.fulfillmentStatus=body.delivery?.method==='pickup'?'Aguardando pagamento na retirada':'Bloqueado';
+    if(storeConfigured()) await updateOrder(id,{raw:baseOrder});
     return {ok:true,order:{...baseOrder,bling,paymentUrl:null},paymentUrl:null};
   }
 
@@ -161,7 +166,7 @@ async function handleInfinitePayWebhook(event){
 
   const updated=await updateOrder(order.id,{
     status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),
-    raw:{...(order.raw||{}),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:body?.receipt_url||null}}
+    raw:{...(order.raw||{}),fulfillmentStatus:order.delivery?.method==='pickup_uber'?'Aguardando liberação da loja':(order.delivery?.method==='pickup'?'Liberado para retirada':'Liberado para entrega'),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:body?.receipt_url||null}}
   });
   if(order.raw?.customer?.userId && order.raw?.discounts?.couponCode){
     try{await markCouponUsed(order.raw.discounts.couponCode,order.raw.customer.userId)}catch(e){console.error('[Coupon]',e)}
@@ -195,13 +200,48 @@ async function checkInfinitePayReturn(event){
 async function getPublicOrder(id){
   const order=await getOrder(id);
   if(!order) return json(404,{message:'Pedido não encontrado.'});
-  return json(200,{ok:true,order:{id:order.id,status:order.status,paymentStatus:order.payment_status,paymentUrl:order.payment_url,blingOrderId:order.bling_order_id,createdAt:order.created_at,paidAt:order.paid_at,delivery:order.delivery,totals:order.totals}});
+  return json(200,{ok:true,order:{id:order.id,status:order.status,paymentStatus:order.payment_status,paymentUrl:order.payment_url,blingOrderId:order.bling_order_id,createdAt:order.created_at,paidAt:order.paid_at,delivery:order.delivery,totals:order.totals,fulfillmentStatus:order.raw?.fulfillmentStatus||null,uber:order.raw?.uber||null}});
+}
+
+
+async function releaseOrder(event){
+  let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
+  if(!adminSecretOk(event,body)) return json(401,{message:'Não autorizado.'});
+  const id=String(body.order||'').trim(); if(!id) return json(400,{message:'Informe o número do pedido.'});
+  const order=await getOrder(id); if(!order) return json(404,{message:'Pedido não encontrado.'});
+  if(order.payment_status!=='APPROVED') return json(409,{message:'O pedido ainda não tem pagamento aprovado.'});
+  const raw={...(order.raw||{}),fulfillmentStatus:'Liberado para Uber',releasedAt:new Date().toISOString()};
+  const updated=await updateOrder(id,{raw});
+  return json(200,{ok:true,order:{id:updated.id,status:updated.status,paymentStatus:updated.payment_status,fulfillmentStatus:raw.fulfillmentStatus,delivery:updated.delivery}});
+}
+async function requestUber(event){
+  let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
+  const id=String(body.order||'').trim(); if(!id) return json(400,{message:'Informe o número do pedido.'});
+  const order=await getOrder(id); if(!order) return json(404,{message:'Pedido não encontrado.'});
+  const fulfillment=String(order.raw?.fulfillmentStatus||'');
+  if(order.payment_status!=='APPROVED') return json(409,{message:'O pagamento ainda não foi aprovado.'});
+  if(order.delivery?.method!=='pickup_uber') return json(409,{message:'Este pedido não é uma retirada via Uber.'});
+  if(fulfillment!=='Liberado para Uber') return json(409,{message:'A loja ainda não liberou o pedido para o Uber.'});
+  if(order.raw?.uber?.delivery_id) return json(200,{ok:true,uber:order.raw.uber});
+  let quoteId=order.delivery?.shipping?.id || order.delivery?.shipping?.quote_id || order.raw?.uber?.quote_id;
+  if(!quoteId){
+    const q=await quoteUberDelivery({delivery:order.delivery||{},subtotal:Number(order.totals?.subtotal||order.totals?.total||0)});
+    quoteId=q?.id||null;
+  }
+  if(!quoteId) return json(409,{message:'Não foi possível obter uma nova cotação do Uber Direct. Confira se o Uber Direct está habilitado no Netlify.'});
+  const delivery=await createUberDelivery({order,quoteId});
+  const uber={quote_id:quoteId,delivery_id:delivery?.id||null,tracking_url:delivery?.tracking_url||delivery?.trackingUrl||null,status:delivery?.status||'created',raw:delivery,created_at:new Date().toISOString()};
+  const raw={...(order.raw||{}),fulfillmentStatus:'Uber solicitado',uber};
+  await updateOrder(id,{raw});
+  return json(200,{ok:true,uber});
 }
 
 exports.handler=async(event)=>{
   try{
     const action=event.queryStringParameters?.action||'create';
     if(action==='infinitepay-webhook') return await handleInfinitePayWebhook(event);
+    if(action==='release') return await releaseOrder(event);
+    if(action==='request-uber') return await requestUber(event);
     if(action==='infinitepay-return') return await checkInfinitePayReturn(event);
     if(event.httpMethod==='GET' && action==='status') return await getPublicOrder(event.queryStringParameters?.order);
     if(event.httpMethod!=='POST') return json(405,{message:'Método não permitido'});

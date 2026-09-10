@@ -332,7 +332,7 @@
     <div class="footer-main container">
       <img src="./assets/logo.png" alt="Relpps Cosméticos" class="footer-logo" loading="lazy">
       <div><h4>Loja</h4><a href="#produtos">Produtos</a><a href="#categorias">Categorias</a><a href="#marcas">Marcas</a></div>
-      <div><h4>Atendimento</h4><a href="#atendimento">WhatsApp</a><a href="#" id="footerCheckoutLink">Entrega e retirada</a><a href="#">Política de troca</a></div>
+      <div><h4>Atendimento</h4><a href="https://wa.me/5561996498557" target="_blank" rel="noopener">WhatsApp: (61) 99649-8557</a><a href="#" id="footerCheckoutLink">Entrega e retirada</a><a href="#" id="footerPolicyLink">Trocas, devoluções e reembolso</a></div>
       <div><h4>Pagamento</h4><p>Pix • Dinheiro • Cartão</p></div>
     </div>
     <div class="footer-bottom">© <span id="year"></span> Relpps Cosméticos. Todos os direitos reservados.</div>
@@ -398,7 +398,7 @@
   <section class="product-detail-page hidden" id="productPage" aria-hidden="true">
     <header class="product-page-header">
       <button class="product-page-back" id="productPageBack" type="button">← Voltar para os produtos</button>
-      <a class="product-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <a class="product-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img class="sales-logo-full" src="assets/relpps-logo-vendas-preta.png" alt="Relpps Cosméticos"></a>
       <button class="product-page-cart" id="productPageCart" type="button">🛍️ <span>Meu carrinho</span><em id="productPageCartCount">0</em></button>
     </header>
     <main class="product-page-main">
@@ -426,7 +426,7 @@
             <button class="btn btn-gold product-add-main" id="productPageAdd" type="button">ADICIONAR AO CARRINHO</button>
           </div>
           <button class="product-favorite-button" id="productFavoriteButton" type="button"><span>♡</span> Salvar produto</button>
-          <div class="product-trust-mini"><span>🔒 Compra segura</span><span>↺ Troca facilitada</span><span>✦ Produtos selecionados</span></div>
+          <div class="product-trust-mini"><span>🔒 Compra segura</span><span>✦ Produtos selecionados</span></div>
         </section>
       </div>
 
@@ -461,7 +461,7 @@
   <section class="full-cart-page hidden" id="cartPage" aria-hidden="true">
     <header class="cart-page-header">
       <button class="cart-page-back" id="cartPageBack" type="button">← Continuar comprando</button>
-      <a class="cart-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <a class="cart-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img class="sales-logo-full" src="assets/relpps-logo-vendas-preta.png" alt="Relpps Cosméticos"></a>
       <div class="cart-page-safe">🔒 Compra segura<br><small>Seus dados protegidos</small></div>
     </header>
     <main class="cart-page-main">
@@ -493,7 +493,7 @@
   <section class="full-checkout-page hidden" id="checkoutModal" aria-hidden="true">
     <header class="checkout-page-header">
       <button class="checkout-page-back" id="checkoutPageBack" type="button">← Voltar ao carrinho</button>
-      <a class="checkout-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img src="assets/logo-symbol-gold.png" alt="Símbolo Relpps"><img src="assets/relpps-wordmark-black.png" alt="Relpps Cosméticos"></a>
+      <a class="checkout-page-brand logo-lockup page-home-logo" href="#inicio" aria-label="Voltar ao início"><img class="sales-logo-full" src="assets/relpps-logo-vendas-preta.png" alt="Relpps Cosméticos"></a>
       <div class="checkout-page-safe">🔒 Compra segura<br><small>Dados protegidos e pedido seguro</small></div>
     </header>
     <main class="checkout-page-main">
@@ -543,14 +543,14 @@
                   <label>Cidade / UF<input name="city" id="city"></label>
                 </div>
                 <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Calcule o frete pelo CEP</b><span>Somente Uber Entregas e Correios aparecerão aqui.</span></div></div>
-                <p class="micro-note" id="shippingStatusNote">Modo de teste ativo até as credenciais reais serem configuradas.</p>
+                <p class="micro-note" id="shippingStatusNote">As cotações reais dependem das credenciais de produção configuradas no Netlify.</p>
               </div>
               <div class="checkout-stage-actions"><button class="checkout-stage-back" id="checkoutBackToData" type="button">← Voltar para dados</button><button class="btn btn-gold checkout-stage-next" id="checkoutToPayment" type="button">CONTINUAR PARA PAGAMENTO →</button></div>
             </section>
 
             <section class="checkout-stage" data-checkout-stage="3" id="checkoutStagePayment">
               <div class="form-section checkout-step-card checkout-payment-card">
-                <div class="section-heading-row"><div><h3>3. Pagamento</h3><p class="micro-note" id="paymentNote">Escolha como deseja pagar. Nesta etapa o visual está pronto para a integração do checkout real.</p></div><span class="checkout-step-badge">03</span></div>
+                <div class="section-heading-row"><div><h3>3. Pagamento</h3><p class="micro-note" id="paymentNote">Escolha Pix ou Cartão para pagar pela InfinitePay, ou Dinheiro somente na retirada presencial.</p></div><span class="checkout-step-badge">03</span></div>
                 <div class="payment-options" id="paymentOptions"></div>
                 <div class="payment-visual-details hidden" id="paymentVisualDetails"></div>
                 <div class="checkout-coupon-box" id="checkoutCouponBox">
@@ -580,6 +580,37 @@
       </form>
     </main>
   </section>
+
+
+  <div class="modal-backdrop hidden" id="policyModal" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
+    <div class="simple-modal policy-modal">
+      <button class="modal-close" data-close="policyModal">×</button>
+      <span class="eyebrow">RELPPS COSMÉTICOS</span>
+      <h2 id="policyTitle">Política de trocas, devoluções e reembolso</h2>
+      <div class="policy-content">
+        <p><strong>Última atualização: 10/09/2026.</strong> Esta política se aplica às compras realizadas pelos canais digitais da Relpps Cosméticos e deve ser lida junto com as informações da oferta e do pedido.</p>
+        <h3>1. Direito de arrependimento</h3>
+        <p>Nas compras realizadas fora do estabelecimento comercial, o consumidor pode desistir da contratação no prazo de <strong>7 dias</strong>, contado da assinatura/contratação ou do recebimento do produto, conforme a legislação aplicável. O exercício do direito será atendido sem cobrança indevida ao consumidor e os valores pagos serão restituídos na forma legal.</p>
+        <h3>2. Como solicitar</h3>
+        <p>Entre em contato pelo WhatsApp <strong>(61) 99649-8557</strong>, informe o número do pedido e explique se deseja exercer o arrependimento, comunicar defeito/vício ou tratar de outra ocorrência. A Relpps fornecerá as orientações para devolução e acompanhará o atendimento.</p>
+        <h3>3. Produto com defeito, vício ou divergência</h3>
+        <p>Se o produto apresentar vício, defeito ou for entregue em desacordo com o pedido, comunique a Relpps assim que identificar o problema. A empresa adotará as providências previstas na legislação de defesa do consumidor, observados os prazos legais e a natureza do produto.</p>
+        <h3>4. Condições de devolução</h3>
+        <p>Quando a devolução decorrer do direito de arrependimento, a Relpps orientará o procedimento de retorno. Sempre que possível, mantenha embalagem, acessórios e comprovantes. Isso não limita direitos que a legislação assegure ao consumidor.</p>
+        <h3>5. Reembolso</h3>
+        <p>Após a confirmação do cancelamento/devolução, o reembolso será realizado pelo meio de pagamento aplicável ou por outra forma legalmente adequada. Em pagamentos por cartão ou Pix processados pela InfinitePay, o estorno/retorno observará também os procedimentos e prazos operacionais do provedor.</p>
+        <h3>6. Retirada presencial e pagamento em dinheiro</h3>
+        <p>Pagamento em dinheiro é exclusivo para retirada presencial. O pedido permanece como <strong>aguardando pagamento</strong> até que o pagamento seja realizado na retirada.</p>
+        <h3>7. Retirada via Uber</h3>
+        <p>Na retirada via Uber, o pedido somente poderá ser coletado após pagamento aprovado e liberação da Relpps. A solicitação da corrida poderá ser feita pelo fluxo disponibilizado no pedido, quando a integração estiver habilitada, e o custo da corrida será informado conforme o serviço utilizado.</p>
+        <h3>8. Privacidade</h3>
+        <p>Os dados fornecidos no cadastro e no checkout são utilizados para executar a compra, atendimento, entrega/retirada, prevenção de fraude, obrigações legais e demais finalidades informadas pela Relpps, observada a LGPD.</p>
+        <h3>9. Atendimento</h3>
+        <p>WhatsApp: <a href="https://wa.me/5561996498557" target="_blank" rel="noopener">(61) 99649-8557</a>.</p>
+        <p class="policy-note">Esta página é uma política operacional da loja e não substitui orientação jurídica individual. Em caso de conflito, prevalecem os direitos assegurados pela legislação brasileira de proteção do consumidor.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="modal-backdrop hidden" id="paymentModal">
     <div class="simple-modal payment-result-modal">

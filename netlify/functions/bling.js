@@ -66,6 +66,8 @@ async function blingFetch(path, options={}) {
 }
 
 
+let blingImageLastStart=0;
+async function waitBlingImageSlot(){ const gap=450; const now=Date.now(); const wait=Math.max(0,gap-(now-blingImageLastStart)); if(wait) await new Promise(r=>setTimeout(r,wait)); blingImageLastStart=Date.now(); }
 async function mapLimit(items, limit, worker){
   const out=new Array(items.length); let next=0;
   async function run(){
@@ -76,7 +78,7 @@ async function mapLimit(items, limit, worker){
 }
 function collectImageValues(value,out=[],seen=new Set(),key=""){
   if(!value) return out;
-  const imageKey=/^(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)$/i;
+  const imageKey=/(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)/i;
   const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
   if(typeof value==="string"){ const x=value.trim(); if(/^https?:\/\//i.test(x)&&(imageKey.test(String(key))||looksImage(x))&&!seen.has(x)){seen.add(x);out.push(x)} return out; }
   if(Array.isArray(value)){value.forEach(v=>collectImageValues(v,out,seen,key));return out;}
@@ -85,7 +87,8 @@ function collectImageValues(value,out=[],seen=new Set(),key=""){
 }
 async function getProductImageMap(ids){
   const unique=[...new Set(ids.map(String).filter(Boolean))].slice(0,60);
-  const rows=await mapLimit(unique,8,async id=>{
+  const rows=await mapLimit(unique,3,async id=>{
+    await waitBlingImageSlot();
     const data=await blingFetch(`/produtos/${encodeURIComponent(id)}`);
     const detail=data?.data||data||{};
     const urls=collectImageValues(detail);

@@ -125,6 +125,12 @@ alter table public.relpps_orders enable row level security;
 alter table public.relpps_orders add column if not exists infinitepay_transaction_nsu text;
 alter table public.relpps_orders add column if not exists infinitepay_invoice_slug text;
 alter table public.relpps_orders add column if not exists infinitepay_receipt_url text;
+-- Controle de liberação e Uber Direct
+alter table public.relpps_orders add column if not exists fulfillment_status text;
+alter table public.relpps_orders add column if not exists released_at timestamptz;
+alter table public.relpps_orders add column if not exists uber_delivery_id text;
+alter table public.relpps_orders add column if not exists uber_tracking_url text;
+
 
 -- OAuth do Bling em produção (uma única conexão por loja).
 create table if not exists public.relpps_bling_oauth (
