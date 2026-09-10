@@ -1609,7 +1609,7 @@ function renderPaymentOptions(method){
   let current=checkoutPayment || $("input[name=payment]:checked")?.value || null;
   const opts=[
     ["pix_online","Pix","Pagamento online seguro."],
-    ["card","Cartão","Checkout seguro da InfinitePay. Pix ou cartão."]
+    ["card","Cartão","Pagamento online seguro via InfinitePay."]
   ];
   // Dinheiro é permitido somente para retirada presencial.
   if(method==="pickup") opts.push(["cash","Dinheiro","Pagamento em dinheiro no momento da retirada."]);
@@ -1764,11 +1764,7 @@ async function getCheckoutOrderStatus(id){
 function showPaymentResult(order,data){
   lastCreatedOrder=order;
   $("#paymentResultTitle").textContent=order.status||"Aguardando pagamento";
-  $("#paymentResultText").innerHTML=order.delivery.method==="pickup_uber"
-    ? `Pedido <b>${order.id}</b> criado e <b>aguardando pagamento</b>. Após a confirmação, aguarde a liberação e solicite o Uber por sua conta.`
-    : isPickupMethod(order.delivery.method)
-      ? `Pedido <b>${order.id}</b> criado e <b>aguardando pagamento</b>. Local de retirada: <b>${order.delivery.pickupAddress||"Relpps Cosméticos — Taguatinga Centro, Brasília - DF"}</b>. <br><a href="https://www.google.com/maps/search/?api=1&query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener" class="checkout-whatsapp-link">📍 Abrir localização no Google Maps</a>`
-      : `Pedido <b>${order.id}</b> criado. Após o pagamento aprovado, ele será liberado para entrega.`;
+  $("#paymentResultText").textContent=`Pedido ${order.id} criado. ${order.delivery.method==="pickup_uber"?"Após o pagamento aprovado, aguarde a liberação e solicite o Uber por sua conta.":isPickupMethod(order.delivery.method)?`Após o pagamento aprovado, ele será preparado para retirada. Local: ${order.delivery.pickupAddress||"Relpps Cosméticos — Taguatinga Centro, Brasília - DF"}.`:"Após o pagamento aprovado, ele será liberado para entrega."}`;
   const actions=$("#paymentResultActions");
   const online=data.payment==="pix_online" || data.payment==="card";
   const testButton=CHECKOUT_TEST_MODE && online ? '<button class="btn btn-gold full" id="simulatePaymentButton" type="button">SIMULAR PAGAMENTO APROVADO (TESTE)</button>' : "";
@@ -2170,9 +2166,9 @@ function renderPaymentVisual(payment){
   if(!payment){ box.innerHTML=""; box.classList.add("hidden"); return; }
   box.classList.remove("hidden");
   if(payment==="pix_online"){
-    box.innerHTML=`<div class="payment-detail-head"><div><b>Pix pela InfinitePay</b><small>O pedido será criado e você será direcionado ao checkout seguro para gerar o QR Code.</small></div><span>✦ PIX</span></div><div class="payment-detail-body"><div class="cash-visual"><b>Pagamento online seguro</b><p>Depois de clicar em finalizar, a InfinitePay abrirá o checkout com o valor final, incluindo frete e descontos.</p><span class="pix-pill">CONFIRMAÇÃO AUTOMÁTICA</span></div></div>`;
+    box.innerHTML=`<div class="payment-detail-head"><div><b>Pagamento via Pix</b><small>Rápido, seguro e com confirmação online.</small></div><span>✦ PIX</span></div><div class="payment-detail-body"><div class="pix-visual"><div class="pix-code-mock" aria-label="Prévia visual do QR Code"></div><div class="pix-copy"><b>Seu QR Code aparecerá aqui</b><p>Esta é uma prévia visual. Na próxima etapa da integração, o QR Code e o código Copia e Cola serão gerados automaticamente pelo provedor de pagamento.</p><span class="pix-pill">GERAÇÃO SEGURA NO CHECKOUT</span></div></div></div>`;
   }else if(payment==="card"){
-    box.innerHTML=`<div class="payment-detail-head"><div><b>Cartão pela InfinitePay</b><small>Os dados do cartão serão digitados somente no checkout seguro da InfinitePay.</small></div><span>▣ CARTÃO</span></div><div class="payment-detail-body"><div class="cash-visual"><b>Você será direcionado ao checkout seguro</b><p>O site não armazena os dados do cartão. Após o pagamento, a InfinitePay notifica o site e o pedido é atualizado automaticamente.</p><span class="pix-pill">CONFIRMAÇÃO AUTOMÁTICA</span></div></div>`;
+    box.innerHTML=`<div class="payment-detail-head"><div><b>Dados do cartão</b><small>Prévia do formulário que será conectado ao provedor de pagamento.</small></div><span>▣ CARTÃO</span></div><div class="payment-detail-body"><div class="payment-visual-grid"><label class="wide">Nome impresso no cartão<input type="text" placeholder="Como está no cartão" autocomplete="cc-name"></label><label class="wide">Número do cartão<input type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" autocomplete="cc-number" maxlength="19"></label><label>Validade<input type="text" inputmode="numeric" placeholder="MM/AA" autocomplete="cc-exp" maxlength="5"></label><label>CVV<input type="password" inputmode="numeric" placeholder="•••" autocomplete="cc-csc" maxlength="4"></label></div></div>`;
   }else if(payment==="cash"){
     box.innerHTML=`<div class="payment-detail-head"><div><b>Pagamento em dinheiro</b><small>Disponível somente para retirada presencial.</small></div><span>💵 RETIRADA</span></div><div class="payment-detail-body"><div class="cash-visual"><b>Você pagará no momento da retirada.</b><p>Após a confirmação do pedido, ele será preparado para retirada. A integração final poderá atualizar automaticamente o status no Bling após a confirmação do pagamento.</p></div></div>`;
   }
@@ -2183,7 +2179,7 @@ function renderPaymentOptions(method){
   let current=checkoutPayment || $("input[name=payment]:checked")?.value || null;
   const opts=[
     ["pix_online","Pix","Pagamento online seguro e rápido."],
-    ["card","Cartão","Você será direcionado ao checkout seguro da InfinitePay."]
+    ["card","Cartão","Preencha os dados no checkout seguro."]
   ];
   if(method==="pickup") opts.push(["cash","Dinheiro","Pagamento no momento da retirada presencial."]);
   if(!opts.some(x=>x[0]===current)){ current=null; checkoutPayment=null; }
@@ -2192,7 +2188,7 @@ function renderPaymentOptions(method){
   renderPaymentVisual(current);
   const note=$("#paymentNote");
   if(note) note.textContent=method==="pickup"
-    ?"Para retirada presencial, Pix, Cartão ou Dinheiro estão disponíveis. Dinheiro fica aguardando pagamento no local."
+    ?"Para retirada presencial, Pix, Cartão ou Dinheiro estão disponíveis."
     :"Escolha Pix ou Cartão. Os dados reais serão conectados ao provedor seguro na próxima etapa.";
 }
 
@@ -2455,7 +2451,7 @@ async function handleCheckoutReturn(){
       order=await getCheckoutOrderStatus(id);
     }
     lastCreatedOrder={id:order.id,status:order.status,paymentStatus:order.paymentStatus,delivery:order.delivery,totals:order.totals};
-    const fakeData={name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente",payment:order.paymentMethod||"card"};
+    const fakeData={name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente",payment:order.paymentStatus==="APPROVED"?"card":"card"};
     showPaymentResult(lastCreatedOrder,fakeData);
     if(order.paymentStatus==="APPROVED") toast("Pagamento confirmado. Pedido liberado.");
     else if(order.paymentStatus==="FAILED") toast("O pagamento não foi aprovado. Você pode tentar novamente.");

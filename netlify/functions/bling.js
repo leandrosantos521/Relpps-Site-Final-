@@ -10,7 +10,7 @@ function json(statusCode, body, headers={}) {
   };
 }
 
-function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relpps.com.br").replace(/\/$/,""); }
+function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticos.netlify.app").replace(/\/$/,""); }
 function redirectUri(){ return process.env.BLING_REDIRECT_URI || `${publicSiteUrl()}/bling-callback.html`; }
 function oauthSecret(){ return process.env.BLING_OAUTH_STATE_SECRET || process.env.BLING_CLIENT_SECRET || ""; }
 function signState(payload){
@@ -164,6 +164,15 @@ exports.handler = async (event) => {
     }
 
     if(action==="disconnect") { try { await clearBlingOAuth(); } catch(e) { console.warn("Falha ao limpar OAuth:",e.message); } return json(200,{ok:true,connected:false}); }
+
+    if(action==="status") {
+      let connected=false;
+      try {
+        const stored=await getBlingOAuth();
+        connected=Boolean(process.env.BLING_ACCESS_TOKEN || stored?.access_token || process.env.BLING_REFRESH_TOKEN);
+      } catch(e) { connected=Boolean(process.env.BLING_ACCESS_TOKEN || process.env.BLING_REFRESH_TOKEN); }
+      return json(200,{ok:true,connected,oauthRedirect:redirectUri()});
+    }
 
     if(action==="products"){
       const products=await getAllProducts();

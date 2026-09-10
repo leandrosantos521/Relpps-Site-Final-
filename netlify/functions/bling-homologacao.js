@@ -20,7 +20,7 @@ async function refreshAccessToken(refreshToken) {
   const clientId = process.env.BLING_CLIENT_ID;
   const clientSecret = process.env.BLING_CLIENT_SECRET;
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error("Bling não configurado: BLING_CLIENT_ID, BLING_CLIENT_SECRET e BLING_REFRESH_TOKEN são obrigatórios.");
+    throw new Error("Para renovar o acesso durante a homologação, configure BLING_CLIENT_ID, BLING_CLIENT_SECRET e BLING_REFRESH_TOKEN no Netlify.");
   }
 
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
@@ -103,7 +103,17 @@ function elapsed(start) {
 async function runHomologation() {
   const startedAt = Date.now();
   const stored = await getBlingOAuth().catch(()=>null);
-  let state = await refreshAccessToken(stored?.refresh_token || process.env.BLING_REFRESH_TOKEN);
+  // Use primeiro o access token atual. Isso permite iniciar a homologação mesmo
+  // antes de o refresh token estar preenchido; se o Bling invalidar o token,
+  // apiRequest() tenta renovar usando o refresh token.
+  let state = {
+    accessToken: process.env.BLING_ACCESS_TOKEN || stored?.access_token || "",
+    refreshToken: stored?.refresh_token || process.env.BLING_REFRESH_TOKEN || ""
+  };
+  if(!state.accessToken) {
+    const refreshed = await refreshAccessToken(state.refreshToken);
+    state = refreshed;
+  }
   let hash = null;
   const steps = [];
 

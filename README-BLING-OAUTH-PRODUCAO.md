@@ -4,14 +4,14 @@
 
 Use exatamente:
 
-`https://relpps.com.br/bling-callback.html`
+`https://relppscosmeticos.netlify.app/bling-callback.html`
 
 ## Variáveis Netlify
 
 - `BLING_CLIENT_ID`
 - `BLING_CLIENT_SECRET`
 - `BLING_REFRESH_TOKEN` (fallback inicial)
-- `BLING_REDIRECT_URI=https://relpps.com.br/bling-callback.html`
+- `BLING_REDIRECT_URI=https://relppscosmeticos.netlify.app/bling-callback.html`
 - `BLING_OAUTH_STATE_SECRET` (uma chave forte escolhida por você)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`

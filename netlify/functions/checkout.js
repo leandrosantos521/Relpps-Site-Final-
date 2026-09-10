@@ -4,7 +4,7 @@ const {getOrder,insertOrder,updateOrder,getCoupon,markCouponUsed}=require('./_li
 function json(statusCode,body,headers={}){return{statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...headers},body:JSON.stringify(body)}}
 function orderId(){return `REL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`}
 function isProduction(){return process.env.CHECKOUT_TEST_MODE==='false'}
-function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relpps.com.br').replace(/\/$/,'')}
+function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmeticos.netlify.app').replace(/\/$/,'')}
 function storeConfigured(){return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)}
 function money(v){return Number(Number(v||0).toFixed(2));}
 
@@ -79,9 +79,7 @@ async function createOrder(body){
   if(payment==='cash' && body.delivery?.method!=='pickup') throw new Error('Dinheiro está disponível somente para retirada presencial.');
   if(!Array.isArray(body.items)||!body.items.length) throw new Error('Carrinho vazio.');
   const id=orderId();
-  if(isProduction() && process.env.BLING_CREATE_ORDERS!=='true') throw new Error('Integração Bling não está habilitada para produção. Defina BLING_CREATE_ORDERS=true no Netlify.');
-  if(isProduction() && !storeConfigured()) throw new Error('Banco de pedidos não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no Netlify para confirmar pagamentos com segurança.');
-  if(isProduction() && payment!=='cash' && !infinitePayConfigured()) throw new Error('Pagamento online não configurado. Defina INFINITEPAY_HANDLE no Netlify.');
+  if(isProduction() && process.env.BLING_CREATE_ORDERS!=='true') throw new Error('Para produção, ative BLING_CREATE_ORDERS=true para validar estoque/preços no Bling antes de cobrar.');
 
   let coupon=null;
   if(body.discounts?.couponCode && body.customer?.userId){
@@ -187,10 +185,7 @@ async function checkInfinitePayReturn(event){
         const paidSituation=situationId('paid');
         if(paidSituation){try{await setOrderSituation(order.bling_order_id,paidSituation)}catch(e){console.error('[Bling return update]',e)}}
       }
-      await updateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:event.queryStringParameters?.receipt_url||null}}});
-      if(order.raw?.customer?.userId && order.raw?.discounts?.couponCode){
-        try{await markCouponUsed(order.raw.discounts.couponCode,order.raw.customer.userId)}catch(e){console.error('[Coupon return]',e)}
-      }
+      await updateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,receipt_url:null}}});
     }
   }
   return json(200,{ok:true,paid:Boolean(payment?.paid),payment});

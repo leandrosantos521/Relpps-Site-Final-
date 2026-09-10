@@ -32,20 +32,20 @@ Também mantenha:
 - `BLING_FORMA_PAGAMENTO_DINHEIRO_ID`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `PUBLIC_SITE_URL=https://relpps.com.br`
+- `PUBLIC_SITE_URL=https://relppscosmeticos.netlify.app`
 - `CHECKOUT_TEST_MODE=false`
 
 ## URLs
 
 Webhook:
 
-`https://relpps.com.br/.netlify/functions/checkout?action=infinitepay-webhook`
+`https://relppscosmeticos.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook`
 
 A InfinitePay também recebe essa URL automaticamente no payload de criação do checkout.
 
 Retorno:
 
-`https://relpps.com.br/?checkout=infinitepay-return&order=REL-...`
+`https://relppscosmeticos.netlify.app/?checkout=infinitepay-return&order=REL-...`
 
 ## Importante
 
