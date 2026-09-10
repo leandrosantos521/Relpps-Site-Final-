@@ -103,16 +103,19 @@ function elapsed(start) {
 async function runHomologation() {
   const startedAt = Date.now();
   const stored = await getBlingOAuth().catch(()=>null);
-  // Use primeiro o access token atual. Isso permite iniciar a homologação mesmo
-  // antes de o refresh token estar preenchido; se o Bling invalidar o token,
-  // apiRequest() tenta renovar usando o refresh token.
+  // Para a homologação, priorizamos SEMPRE o OAuth recém-conectado no Supabase.
+  // Um BLING_ACCESS_TOKEN antigo no Netlify pode causar invalid_token mesmo quando
+  // a conexão OAuth atual está válida. Como o Bling exige refresh token em uma das
+  // etapas, renovamos antes do teste quando temos um refresh token salvo.
   let state = {
-    accessToken: process.env.BLING_ACCESS_TOKEN || stored?.access_token || "",
+    accessToken: stored?.access_token || "",
     refreshToken: stored?.refresh_token || process.env.BLING_REFRESH_TOKEN || ""
   };
-  if(!state.accessToken) {
+  if (state.refreshToken) {
     const refreshed = await refreshAccessToken(state.refreshToken);
     state = refreshed;
+  } else if (!state.accessToken) {
+    throw new Error("Bling conectado não possui refresh token salvo. Reconecte o aplicativo pelo botão Conectar ao Bling.");
   }
   let hash = null;
   const steps = [];
