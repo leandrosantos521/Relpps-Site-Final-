@@ -53,6 +53,8 @@ async function apiRequest(path, method, body, state, homologationHash) {
   let retriedAfter401 = false;
 
   while (true) {
+    await waitForRateLimit(state);
+
     const headers = {
       Authorization: `Bearer ${state.accessToken}`,
       Accept: "application/json",
@@ -78,6 +80,8 @@ async function apiRequest(path, method, body, state, homologationHash) {
       state.accessToken = refreshed.accessToken;
       state.refreshToken = refreshed.refreshToken;
       state.refreshedDuringTest = true;
+      // O refresh é uma chamada OAuth fora da sequência de homologação.
+      // A próxima requisição da sequência também respeitará o intervalo mínimo.
       continue;
     }
 
@@ -97,6 +101,21 @@ async function apiRequest(path, method, body, state, homologationHash) {
 
 function elapsed(start) {
   return Number(((Date.now() - start) / 1000).toFixed(3));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// A homologação tem limite de 3 requisições por segundo na API do Bling.
+// Mantemos pelo menos 450 ms entre o início de duas requisições da sequência,
+// evitando HTTP 429 sem comprometer o limite total de 10 segundos.
+async function waitForRateLimit(state) {
+  const now = Date.now();
+  const last = Number(state.lastRequestAt || 0);
+  const wait = Math.max(0, 450 - (now - last));
+  if (wait > 0) await sleep(wait);
+  state.lastRequestAt = Date.now();
 }
 
 async function runHomologation() {
