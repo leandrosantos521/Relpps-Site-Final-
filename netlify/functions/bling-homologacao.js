@@ -138,11 +138,10 @@ async function runHomologation() {
   steps.push({ step: 2, method: "POST", status: postResult.status, seconds: elapsed(startedAt), ok: true, productId });
 
   // 3) PUT — altera a descrição para "Copo".
-  // O ID é informado no path pelo Bling e não deve ser reenviado no body.
-  // Enviamos os dados recebidos no GET, removendo apenas o ID do recurso.
-  const updatedProduct = { ...reference };
-  delete updatedProduct.id;
-  updatedProduct.descricao = "Copo";
+  // A documentação do Bling exige os dados atualizados do produto no body.
+  // Para evitar conflito entre o ID temporário da referência do GET e o ID
+  // criado no POST, o body leva o mesmo ID retornado pelo POST, além do ID no path.
+  const updatedProduct = { ...reference, id: productId, descricao: "Copo" };
   const putResult = await apiRequest(`/homologacao/produtos/${encodeURIComponent(productId)}`, "PUT", updatedProduct, state, hash);
   hash = putResult.nextHash;
   steps.push({ step: 3, method: "PUT", status: putResult.status, seconds: elapsed(startedAt), ok: true, productId });
