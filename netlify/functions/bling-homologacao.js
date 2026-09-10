@@ -12,10 +12,6 @@ function json(statusCode, body) {
   };
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 async function refreshAccessToken(refreshToken) {
   const clientId = process.env.BLING_CLIENT_ID;
   const clientSecret = process.env.BLING_CLIENT_SECRET;
@@ -47,7 +43,6 @@ async function refreshAccessToken(refreshToken) {
 
   data.saved_at = new Date().toISOString();
   if(data.expires_in) data.expires_at = new Date(Date.now() + Number(data.expires_in)*1000).toISOString();
-  try { await saveBlingOAuth(data); } catch(e) { console.warn("Não foi possível salvar OAuth do Bling:", e.message); }
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token || refreshToken
@@ -82,6 +77,7 @@ async function apiRequest(path, method, body, state, homologationHash) {
       const refreshed = await refreshAccessToken(state.refreshToken);
       state.accessToken = refreshed.accessToken;
       state.refreshToken = refreshed.refreshToken;
+      state.refreshedDuringTest = true;
       continue;
     }
 
@@ -104,22 +100,31 @@ function elapsed(start) {
 }
 
 async function runHomologation() {
-  const startedAt = Date.now();
+  // O cronômetro do teste começa somente quando a sequência oficial começa.
+  // Não fazemos refresh desnecessário antes do GET: isso evita uma chamada OAuth
+  // extra e reduz a latência. O refresh será feito apenas quando o Bling invalidar
+  // o access token, como previsto na própria homologação.
   const stored = await getBlingOAuth().catch(()=>null);
-  // Para a homologação, priorizamos SEMPRE o OAuth recém-conectado no Supabase.
-  // Um BLING_ACCESS_TOKEN antigo no Netlify pode causar invalid_token mesmo quando
-  // a conexão OAuth atual está válida. Como o Bling exige refresh token em uma das
-  // etapas, renovamos antes do teste quando temos um refresh token salvo.
   let state = {
     accessToken: stored?.access_token || "",
-    refreshToken: stored?.refresh_token || process.env.BLING_REFRESH_TOKEN || ""
+    refreshToken: stored?.refresh_token || process.env.BLING_REFRESH_TOKEN || "",
+    refreshedDuringTest: false
   };
-  if (state.refreshToken) {
+
+  const tokenStillValid = stored?.expires_at &&
+    Date.now() < new Date(stored.expires_at).getTime() - 30000;
+
+  if (!state.accessToken || !tokenStillValid) {
+    if (!state.refreshToken) {
+      throw new Error("Bling conectado não possui refresh token salvo. Reconecte o aplicativo pelo botão Conectar ao Bling.");
+    }
     const refreshed = await refreshAccessToken(state.refreshToken);
-    state = refreshed;
-  } else if (!state.accessToken) {
-    throw new Error("Bling conectado não possui refresh token salvo. Reconecte o aplicativo pelo botão Conectar ao Bling.");
+    state.accessToken = refreshed.accessToken;
+    state.refreshToken = refreshed.refreshToken;
+    state.refreshedDuringTest = true;
   }
+
+  const startedAt = Date.now();
   let hash = null;
   const steps = [];
 
@@ -163,6 +168,20 @@ async function runHomologation() {
   const deleteResult = await apiRequest(`/homologacao/produtos/${encodeURIComponent(productId)}`, "DELETE", undefined, state, hash);
   hash = deleteResult.nextHash;
   steps.push({ step: 5, method: "DELETE", status: deleteResult.status, seconds: elapsed(startedAt), ok: true, productId });
+
+  // Só depois que as 5 requisições da homologação terminaram salvamos o token
+  // renovado. Assim o Supabase nunca fica entre duas requisições da sequência.
+  if (state.refreshedDuringTest && state.accessToken && state.refreshToken) {
+    try {
+      await saveBlingOAuth({
+        access_token: state.accessToken,
+        refresh_token: state.refreshToken,
+        token_type: "Bearer"
+      });
+    } catch (e) {
+      console.warn("Não foi possível salvar o OAuth renovado após a homologação:", e.message);
+    }
+  }
 
   const totalSeconds = elapsed(startedAt);
   if (totalSeconds > 10) {
