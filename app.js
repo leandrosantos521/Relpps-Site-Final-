@@ -144,7 +144,7 @@ let currentBrand = "";
 let currentSearch = "";
 let cartPageReceiveMode = "delivery";
 let pendingCheckout = false;
-const PRODUCTS_PER_PAGE = 50;
+const PRODUCTS_PER_PAGE = 24;
 let currentPage = 1;
 let shippingQuotes = {melhor_envio:[], uber:null};
 let selectedShipping = null;
@@ -644,7 +644,7 @@ let imageHydrationRun=0;
 async function hydratePageImages(pageList){
   if(!window.RELPPS_CONFIG?.BLING_API_ENABLED || !Array.isArray(pageList) || !pageList.length) return;
   const run=++imageHydrationRun;
-  const ids=pageList.map(p=>String(p.id)).filter(Boolean).slice(0,50);
+  const ids=pageList.map(p=>String(p.id)).filter(Boolean).slice(0,24);
   try{
     const r=await fetch(`/api/bling?action=product-images&ids=${encodeURIComponent(ids.join(","))}`,{headers:{"Accept":"application/json"}});
     if(!r.ok) return;
@@ -663,6 +663,27 @@ async function hydratePageImages(pageList){
       localStorage.setItem("relpps-bling-image-cache",JSON.stringify({...old,...cache}));
     }catch{}
   }catch(e){ console.info("Imagens do Bling indisponíveis nesta página.",e); }
+}
+
+async function hydrateSingleProductImages(p){
+  if(!p || !window.RELPPS_CONFIG?.BLING_API_ENABLED) return;
+  try{
+    const r=await fetch(`/api/bling?action=product-images&ids=${encodeURIComponent(String(p.id))}`,{headers:{"Accept":"application/json"},cache:"no-store"});
+    if(!r.ok) return;
+    const data=await r.json();
+    const urls=Array.isArray(data?.images?.[String(p.id)])?data.images[String(p.id)].filter(Boolean):[];
+    if(!urls.length) return;
+    p.images=[...new Set(urls)]; p.image=p.images[0];
+    if(productPageActive && String(productPageActive.id)===String(p.id)){
+      productGalleryImages=productGalleryFor(p);
+      productGalleryIndex=Math.min(productGalleryIndex,Math.max(0,productGalleryImages.length-1));
+      renderProductGallery();
+    }
+    try{
+      const old=JSON.parse(localStorage.getItem("relpps-bling-image-cache")||"{}");
+      localStorage.setItem("relpps-bling-image-cache",JSON.stringify({...old,[String(p.id)]:p.images}));
+    }catch{}
+  }catch(e){ console.info("Galeria completa do Bling indisponível.",e); }
 }
 
 function renderProducts(){
@@ -2357,6 +2378,7 @@ function openProduct(id){
   renderProductGallery();renderProductPageVariations();refreshProductPageVariationUI();renderProductDetails();renderProductReviews();renderFavoriteButton();
   $("#productPageCartCount").textContent=cart.reduce((s,i)=>s+i.qty,0);
   const page=$("#productPage");page.classList.remove("hidden");page.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";page.scrollTop=0;
+  hydrateSingleProductImages(p);
 }
 function closeAllDedicatedPages(){
   ["productPage","cartPage","checkoutModal"].forEach(id=>{

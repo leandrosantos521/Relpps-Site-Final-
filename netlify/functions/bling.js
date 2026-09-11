@@ -67,7 +67,8 @@ async function blingFetch(path, options={}) {
 
 
 let blingImageLastStart=0;
-async function waitBlingImageSlot(){ const gap=450; const now=Date.now(); const wait=Math.max(0,gap-(now-blingImageLastStart)); if(wait) await new Promise(r=>setTimeout(r,wait)); blingImageLastStart=Date.now(); }
+const blingImageMemoryCache=new Map();
+async function waitBlingImageSlot(){ const gap=220; const now=Date.now(); const wait=Math.max(0,gap-(now-blingImageLastStart)); if(wait) await new Promise(r=>setTimeout(r,wait)); blingImageLastStart=Date.now(); }
 async function mapLimit(items, limit, worker){
   const out=new Array(items.length); let next=0;
   async function run(){
@@ -86,15 +87,20 @@ function collectImageValues(value,out=[],seen=new Set(),key=""){
   return out;
 }
 async function getProductImageMap(ids){
-  const unique=[...new Set(ids.map(String).filter(Boolean))].slice(0,60);
-  const rows=await mapLimit(unique,3,async id=>{
+  const unique=[...new Set(ids.map(String).filter(Boolean))].slice(0,24);
+  const now=Date.now();
+  const missing=unique.filter(id=>{const hit=blingImageMemoryCache.get(id); return !(hit && now-hit.at<15*60*1000);});
+  const rows=await mapLimit(missing,4,async id=>{
     await waitBlingImageSlot();
     const data=await blingFetch(`/produtos/${encodeURIComponent(id)}`);
     const detail=data?.data||data||{};
     const urls=collectImageValues(detail);
+    blingImageMemoryCache.set(id,{at:Date.now(),urls});
     return [id,urls];
   });
-  const images={}; rows.filter(Boolean).forEach(([id,urls])=>{images[id]=urls||[]});
+  const images={};
+  unique.forEach(id=>{ const hit=blingImageMemoryCache.get(id); if(hit) images[id]=hit.urls||[]; });
+  rows.filter(Boolean).forEach(([id,urls])=>{images[id]=urls||[]});
   return images;
 }
 

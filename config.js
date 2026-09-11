@@ -1,6 +1,6 @@
 window.RELPPS_CONFIG = {
   // Troque pelo número comercial da loja, somente números com DDI + DDD.
-  WHATSAPP_NUMBER: "5511999999999",
+  WHATSAPP_NUMBER: "5561996498557",
 
   // Supabase: cole aqui a URL do projeto e a chave PUBLICÁVEL (publishable).
   // NUNCA coloque a secret/service_role key no navegador.
