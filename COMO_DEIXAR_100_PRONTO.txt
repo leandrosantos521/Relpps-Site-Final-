@@ -1,0 +1,32 @@
+RELPPS — CONFIGURAÇÃO FINAL
+
+1) Netlify
+BLING_CLIENT_ID=seu client id do app Bling
+BLING_CLIENT_SECRET=seu client secret do app Bling
+BLING_CREATE_ORDERS=true
+BLING_REDIRECT_URI=https://relppscosmeticoss.netlify.app/bling-callback.html
+BLING_OAUTH_STATE_SECRET=senha aleatória forte
+SUPABASE_URL=https://wsoetvctzybsdtsuydca.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=secret key do Supabase (somente Netlify)
+INFINITEPAY_HANDLE=sua InfiniteTag sem $
+PUBLIC_SITE_URL=https://relppscosmeticoss.netlify.app
+CHECKOUT_TEST_MODE=false
+NODE_VERSION=20
+
+2) Bling
+Cadastre no aplicativo do Bling exatamente: https://relppscosmeticoss.netlify.app/bling-callback.html
+Depois abra https://relppscosmeticoss.netlify.app/bling-connect.html e clique CONECTAR AO BLING. Autorize. O sistema salva access_token/refresh_token no Supabase automaticamente. Não é necessário copiar Refresh Token para a Netlify quando você usa esse fluxo.
+
+3) Supabase
+Execute supabase-schema.sql no SQL Editor uma vez. Isso cria relpps_bling_oauth e as tabelas do checkout.
+
+4) Imagens
+O site consulta produtos do Bling e depois consulta detalhes em lotes para recuperar fotos ausentes na listagem. As URLs são exibidas pelo proxy /api/bling?action=image e ficam em cache.
+
+5) InfinitePay
+Habilite o Checkout Integrado. O site cria links em POST /links, envia o cliente para Pix/cartão e confirma por payment_check + webhook. Webhook: https://relppscosmeticoss.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook
+
+6) IDs de situação
+BLING_SITUACAO_AGUARDANDO_PAGAMENTO_ID e BLING_SITUACAO_PAGO_ID são específicos da sua conta e devem ser preenchidos somente com IDs reais se você quiser atualizar situações automaticamente.
+
+Nunca coloque BLING_CLIENT_SECRET, SUPABASE_SERVICE_ROLE_KEY ou tokens privados no GitHub, config.js ou ZIP.

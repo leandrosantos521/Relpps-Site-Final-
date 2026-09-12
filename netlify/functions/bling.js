@@ -10,7 +10,7 @@ function json(statusCode, body, headers={}) {
   };
 }
 
-function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticos.netlify.app").replace(/\/$/,""); }
+function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticoss.netlify.app").replace(/\/$/,""); }
 function redirectUri(){ return process.env.BLING_REDIRECT_URI || `${publicSiteUrl()}/bling-callback.html`; }
 function oauthSecret(){ return process.env.BLING_OAUTH_STATE_SECRET || process.env.BLING_CLIENT_SECRET || ""; }
 function signState(payload){
@@ -38,10 +38,12 @@ async function refreshAccessToken(refresh){
   return data.access_token;
 }
 async function tokenFromRefresh(){
-  const access=process.env.BLING_ACCESS_TOKEN; if(access) return access;
   let stored=null; try { stored=await getBlingOAuth(); } catch(e) { console.warn("Falha ao ler token Bling do Supabase:",e.message); }
   if(stored?.access_token && stored?.expires_at && Date.now()<new Date(stored.expires_at).getTime()-60000) return stored.access_token;
-  return refreshAccessToken(stored?.refresh_token || process.env.BLING_REFRESH_TOKEN);
+  // Se houver refresh token, ele é a fonte de verdade para renovar o JWT.
+  if(stored?.refresh_token || process.env.BLING_REFRESH_TOKEN) return refreshAccessToken(stored?.refresh_token || process.env.BLING_REFRESH_TOKEN);
+  if(process.env.BLING_ACCESS_TOKEN) return process.env.BLING_ACCESS_TOKEN;
+  throw new Error("Bling não conectado. Configure BLING_REFRESH_TOKEN ou conecte o aplicativo pelo OAuth.");
 }
 async function exchangeAuthorizationCode(code){
   const clientId=process.env.BLING_CLIENT_ID, clientSecret=process.env.BLING_CLIENT_SECRET;
@@ -55,20 +57,38 @@ async function exchangeAuthorizationCode(code){
   await saveBlingOAuth(data); return data;
 }
 
-async function blingFetch(path, options={}) {
+let blingRequestLastStart = 0;
+async function waitBlingRequestSlot(){
+  const gap = 360; // margem segura para o limite oficial de 3 req/s
+  const now = Date.now();
+  const wait = Math.max(0, gap - (now - blingRequestLastStart));
+  if(wait) await new Promise(r=>setTimeout(r, wait));
+  blingRequestLastStart = Date.now();
+}
+
+async function blingFetch(path, options={}, attempt=0) {
   const token = await tokenFromRefresh();
+  await waitBlingRequestSlot();
   const headers = {"Authorization":`Bearer ${token}`,"Accept":"application/json","Content-Type":"application/json","enable-jwt":"1",...(options.headers||{})};
   const r = await fetch(`${BLING_BASE}${path}`,{...options,headers});
   const text = await r.text();
   let data={}; try{data=JSON.parse(text)}catch{}
+  if((r.status===401 || r.status===429 || r.status>=500) && attempt<2){
+    if(r.status===401){
+      // Força uma renovação usando o refresh token salvo/configurado.
+      try { await refreshAccessToken((await getBlingOAuth().catch(()=>null))?.refresh_token || process.env.BLING_REFRESH_TOKEN); } catch(e) { if(attempt>=1) throw e; }
+    }
+    const retryAfter=Number(r.headers.get('retry-after')||0);
+    await new Promise(res=>setTimeout(res, retryAfter>0 ? retryAfter*1000 : 900*(attempt+1)));
+    return blingFetch(path, options, attempt+1);
+  }
   if(!r.ok) throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
   return data;
 }
 
 
 let blingImageLastStart=0;
-const blingImageMemoryCache=new Map();
-async function waitBlingImageSlot(){ const gap=220; const now=Date.now(); const wait=Math.max(0,gap-(now-blingImageLastStart)); if(wait) await new Promise(r=>setTimeout(r,wait)); blingImageLastStart=Date.now(); }
+async function waitBlingImageSlot(){ const gap=360; const now=Date.now(); const wait=Math.max(0,gap-(now-blingImageLastStart)); if(wait) await new Promise(r=>setTimeout(r,wait)); blingImageLastStart=Date.now(); }
 async function mapLimit(items, limit, worker){
   const out=new Array(items.length); let next=0;
   async function run(){
@@ -86,21 +106,49 @@ function collectImageValues(value,out=[],seen=new Set(),key=""){
   if(typeof value==="object") for(const [k,v] of Object.entries(value)){if(imageKey.test(k)||typeof v==="object") collectImageValues(v,out,seen,k);}
   return out;
 }
+const imageMemoryCache = new Map();
+function isAllowedImageHost(hostname){
+  const h=String(hostname||'').toLowerCase();
+  return h==='bling.com.br' || h.endsWith('.bling.com.br') || h==='blingcdn.com' || h.endsWith('.blingcdn.com');
+}
+async function proxyBlingImage(rawUrl){
+  let target;
+  try { target=new URL(String(rawUrl||'')); } catch { throw new Error('URL de imagem inválida.'); }
+  if(target.protocol!=='https:' || !isAllowedImageHost(target.hostname)) throw new Error('Host de imagem não permitido.');
+  const cacheKey=target.toString();
+  const cached=imageMemoryCache.get(cacheKey);
+  if(cached && cached.expires>Date.now()) return cached;
+  const token=await tokenFromRefresh();
+  await waitBlingRequestSlot();
+  let response=await fetch(target,{headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0'},redirect:'follow'});
+  if((response.status===401||response.status===403)&&token){
+    await waitBlingRequestSlot();
+    response=await fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0'},redirect:'follow'});
+  }
+  if(!response.ok) throw new Error(`Imagem HTTP ${response.status}`);
+  const type=String(response.headers.get('content-type')||'').toLowerCase();
+  const buf=Buffer.from(await response.arrayBuffer());
+  let contentType=type;
+  if(!contentType.startsWith('image/')){
+    const ext=target.pathname.toLowerCase().match(/\.(png|jpe?g|webp|gif|avif|svg)$/)?.[1];
+    const guessed=ext==='jpg'||ext==='jpeg'?'image/jpeg':ext?`image/${ext}`:'';
+    if(guessed) contentType=guessed; else throw new Error('O Bling não retornou uma imagem.');
+  }
+  const result={buffer:buf,contentType,expires:Date.now()+6*60*60*1000};
+  imageMemoryCache.set(cacheKey,result);
+  if(imageMemoryCache.size>250){ const first=imageMemoryCache.keys().next().value; imageMemoryCache.delete(first); }
+  return result;
+}
+
 async function getProductImageMap(ids){
   const unique=[...new Set(ids.map(String).filter(Boolean))].slice(0,24);
-  const now=Date.now();
-  const missing=unique.filter(id=>{const hit=blingImageMemoryCache.get(id); return !(hit && now-hit.at<15*60*1000);});
-  const rows=await mapLimit(missing,4,async id=>{
-    await waitBlingImageSlot();
+  const rows=await mapLimit(unique,3,async id=>{
     const data=await blingFetch(`/produtos/${encodeURIComponent(id)}`);
     const detail=data?.data||data||{};
     const urls=collectImageValues(detail);
-    blingImageMemoryCache.set(id,{at:Date.now(),urls});
     return [id,urls];
   });
-  const images={};
-  unique.forEach(id=>{ const hit=blingImageMemoryCache.get(id); if(hit) images[id]=hit.urls||[]; });
-  rows.filter(Boolean).forEach(([id,urls])=>{images[id]=urls||[]});
+  const images={}; rows.filter(Boolean).forEach(([id,urls])=>{images[id]=urls||[]});
   return images;
 }
 
@@ -146,45 +194,10 @@ function buildSaleOrder(payload={}){
   return order;
 }
 
-
-function isAllowedImageHost(raw){
-  try{
-    const u=new URL(String(raw||""));
-    const h=u.hostname.toLowerCase();
-    return u.protocol==="https:" && (h==="bling.com.br" || h.endsWith(".bling.com.br"));
-  }catch{return false;}
-}
-
-async function fetchBlingImage(rawUrl){
-  if(!isAllowedImageHost(rawUrl)) throw new Error("URL de imagem não permitida.");
-  const url=new URL(rawUrl);
-  let r=await fetch(url,{headers:{"Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8","User-Agent":"Relpps Cosméticos/1.0"}});
-  if((r.status===401||r.status===403)){
-    try{
-      const token=await tokenFromRefresh();
-      r=await fetch(url,{headers:{"Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8","User-Agent":"Relpps Cosméticos/1.0","Authorization":`Bearer ${token}`,"enable-jwt":"1"}});
-    }catch{}
-  }
-  if(!r.ok) throw new Error(`Imagem Bling HTTP ${r.status}`);
-  const type=r.headers.get("content-type")||"image/jpeg";
-  if(!/^image\//i.test(type)) throw new Error("Resposta não é imagem.");
-  const buf=Buffer.from(await r.arrayBuffer());
-  return {buf,type};
-}
-
 exports.handler = async (event) => {
   try {
     const method = event.httpMethod || "GET";
     const action = event.queryStringParameters?.action || "products";
-
-    if(action==="image-proxy"){
-      const raw=event.queryStringParameters?.url||"";
-      if(!raw) return json(400,{message:"Informe url."});
-      try{
-        const {buf,type}=await fetchBlingImage(raw);
-        return {statusCode:200,headers:{"Content-Type":type,"Cache-Control":"public, max-age=3600, s-maxage=3600","X-Content-Type-Options":"nosniff"},isBase64Encoded:true,body:buf.toString("base64")};
-      }catch(e){ return json(502,{message:e.message||"Falha ao carregar imagem do Bling."}); }
-    }
 
     if(action==="health") return json(200,{ok:true,service:"Relpps ↔ Bling",oauthRedirect:redirectUri()});
 
@@ -216,6 +229,18 @@ exports.handler = async (event) => {
         connected=Boolean(process.env.BLING_ACCESS_TOKEN || stored?.access_token || process.env.BLING_REFRESH_TOKEN);
       } catch(e) { connected=Boolean(process.env.BLING_ACCESS_TOKEN || process.env.BLING_REFRESH_TOKEN); }
       return json(200,{ok:true,connected,oauthRedirect:redirectUri()});
+    }
+
+    if(action==="image"){
+      const rawUrl=event.queryStringParameters?.url;
+      if(!rawUrl) return json(400,{message:"Informe a URL da imagem."});
+      try{
+        const image=await proxyBlingImage(rawUrl);
+        return {statusCode:200,headers:{"Content-Type":image.contentType,"Cache-Control":"public,max-age=21600,stale-while-revalidate=86400","X-Content-Type-Options":"nosniff"},isBase64Encoded:true,body:image.buffer.toString("base64")};
+      }catch(e){
+        console.error('[Bling imagem]',e.message);
+        return json(502,{message:'Não foi possível carregar a imagem do Bling.'});
+      }
     }
 
     if(action==="products"){
