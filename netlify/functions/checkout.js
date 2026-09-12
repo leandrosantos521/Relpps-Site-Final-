@@ -5,7 +5,7 @@ const {createDelivery: createUberDelivery,quote: quoteUberDelivery}=require('./_
 function json(statusCode,body,headers={}){return{statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...headers},body:JSON.stringify(body)}}
 function orderId(){return `REL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`}
 function isProduction(){return process.env.CHECKOUT_TEST_MODE==='false'}
-function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmeticoss.netlify.app').replace(/\/$/,'')}
+function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmeticos.netlify.app').replace(/\/$/,'')}
 function storeConfigured(){return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)}
 function money(v){return Number(Number(v||0).toFixed(2));}
 function adminSecretOk(event,body={}){const expected=String(process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim(); const supplied=String(body.secret||event.headers?.['x-relpps-admin-secret']||event.headers?.['X-Relpps-Admin-Secret']||'').trim(); return Boolean(expected && supplied && supplied===expected);}

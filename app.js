@@ -387,7 +387,7 @@ function blingImageUrls(p){
     }
   };
   // Campos conhecidos do Bling + varredura profunda para diferenças entre respostas.
-  ['imagem','imagemUrl','urlImagem','imagemPrincipal','imagens','fotos','anexos','midias','media','images'].forEach(k=>push(p?.[k],k));
+  ['imagem','imagemUrl','imagemURL','imagemurl','urlImagem','imagemPrincipal','imagemPrincipalUrl','imagens','fotos','anexos','midias','media','images'].forEach(k=>push(p?.[k],k));
   if(!urls.length) push(p,'root');
   return urls;
 }
@@ -395,11 +395,12 @@ function blingImageUrls(p){
 function blingImageProxy(url){
   const raw=String(url||"").trim();
   if(!/^https?:\/\//i.test(raw)) return raw;
-  // Remove parâmetros comuns de miniaturas quando existirem e passa pelo proxy local.
   try{
     const u=new URL(raw);
     ["width","height","w","h","resize","thumbnail","thumb","size"].forEach(k=>u.searchParams.delete(k));
-    // Imagens do Bling funcionam diretamente no <img>. Evita 404 quando o site é aberto pelo Live Server (127.0.0.1:5500), que não possui a rota /api/bling.
+    const h=u.hostname.toLowerCase();
+    // Imagens armazenadas no próprio Bling são servidas pelo backend para evitar bloqueio/hotlink/CORS e garantir que o navegador receba a imagem.
+    if(h==="bling.com.br" || h.endsWith(".bling.com.br")) return `/api/bling?action=image-proxy&url=${encodeURIComponent(u.toString())}`;
     return u.toString();
   }catch{return raw;}
 }
@@ -426,7 +427,8 @@ function normalizeBlingProduct(p){
   const price=Number(p?.preco ?? p?.precoVenda ?? p?.precoVendaVarejo ?? 0);
   const name=formatProductName(p?.nome ?? p?.descricao ?? "Produto");
   const area=classifyArea(p); const category=classifySubcategory(p,area);
-  const imageUrls=imageCandidates(p);
+  const directImage = p?.imagemUrl || p?.imagemURL || p?.imagemurl || p?.urlImagem || p?.imagemPrincipal || "";
+  const imageUrls=[...new Set([...(directImage?[directImage]:[]), ...imageCandidates(p)])].map(blingImageProxy).filter(Boolean);
   const rawBrand=p?.marca?.descricao||p?.marca?.nome||((typeof p?.marca==="string")?p.marca:"");
   const fallback=safeImageFallback();
   const image=productImageFor(name, imageUrls[0]||"", rawBrand, fallback);
@@ -528,6 +530,8 @@ async function loadProducts(){
     if(Array.isArray(data.products) && data.products.length){
       applyProductSource(data.products,"bling");
       try{localStorage.setItem("relpps-bling-products-cache",JSON.stringify(data.products));}catch{}
+      // Busca imagens reais mesmo quando a listagem do Bling vier sem imagemUrl.
+      setTimeout(()=>hydratePageImages(products.slice(0,24)),120);
     }
   }catch(e){
     // Tenta o último catálogo vivo salvo no navegador antes do cache empacotado.
@@ -654,7 +658,7 @@ async function hydratePageImages(pageList){
     pageList.forEach(p=>{
       const urls=Array.isArray(map[String(p.id)])?map[String(p.id)].filter(Boolean):[];
       if(!urls.length) return;
-      p.images=[...new Set(urls)]; p.image=p.images[0]; cache[String(p.id)]=p.images;
+      p.images=[...new Set(urls.map(blingImageProxy).filter(Boolean))]; p.image=p.images[0]; cache[String(p.id)]=p.images;
       const card=document.querySelector(`.product-card [data-view="${CSS.escape(String(p.id))}"] img`);
       if(card){card.onerror=()=>{card.onerror=null;card.src=safeImageFallback()};card.src=p.image;}
     });
@@ -673,7 +677,7 @@ async function hydrateSingleProductImages(p){
     const data=await r.json();
     const urls=Array.isArray(data?.images?.[String(p.id)])?data.images[String(p.id)].filter(Boolean):[];
     if(!urls.length) return;
-    p.images=[...new Set(urls)]; p.image=p.images[0];
+    p.images=[...new Set(urls.map(blingImageProxy).filter(Boolean))]; p.image=p.images[0];
     if(productPageActive && String(productPageActive.id)===String(p.id)){
       productGalleryImages=productGalleryFor(p);
       productGalleryIndex=Math.min(productGalleryIndex,Math.max(0,productGalleryImages.length-1));

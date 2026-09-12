@@ -22,7 +22,7 @@ Obrigatórias para checkout + Bling:
 - `INFINITEPAY_HANDLE` (sem `$`)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `PUBLIC_SITE_URL=https://relppscosmeticoss.netlify.app`
+- `PUBLIC_SITE_URL=https://relppscosmeticos.netlify.app`
 - `CHECKOUT_TEST_MODE=false`
 - `STORE_PICKUP_ADDRESS=C 12, Área Especial 02, Loja 30 - Taguatinga Centro, Brasília - DF - CEP 72010-901`
 
@@ -45,7 +45,7 @@ No App/Web InfinitePay, habilite **Checkout Integrado**. A documentação oficia
 
 Webhook configurado pelo sistema:
 
-`https://relppscosmeticoss.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook`
+`https://relppscosmeticos.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook`
 
 A URL de retorno é gerada por pedido. O sistema usa `order_nsu`, `transaction_nsu` e `slug` e confirma o pagamento via `payment_check` antes de marcar o pedido como pago.
 
@@ -94,7 +94,7 @@ O access token expira e o refresh token também tem prazo. Se o refresh token ex
 
 ## 8. Verificação rápida depois do deploy
 
-Abra `https://relppscosmeticoss.netlify.app/api/health`.
+Abra `https://relppscosmeticos.netlify.app/api/health`.
 
 O retorno deve mostrar `ok: true`. Se aparecer `503`, o próprio JSON indica qual configuração está faltando. O campo de frete pode ficar `false` se o Melhor Envio ainda não tiver sido configurado; isso não impede retirada presencial.
 
@@ -104,7 +104,7 @@ O projeto inclui `homologacao-bling.html` e a Function `bling-homologacao.js`.
 
 1. No Netlify, crie `HOMOLOGATION_SECRET` com um segredo forte escolhido por você.
 2. Faça um novo deploy.
-3. Abra `https://relppscosmeticoss.netlify.app/homologacao-bling.html`.
+3. Abra `https://relppscosmeticos.netlify.app/homologacao-bling.html`.
 4. Informe o mesmo segredo e clique em **Executar homologação**.
 5. A função executa automaticamente GET → POST → PUT → PATCH → DELETE na API de homologação, encadeando o `x-bling-homologacao` e renovando o token se necessário.
 6. O teste é rejeitado se ultrapassar 10 segundos.

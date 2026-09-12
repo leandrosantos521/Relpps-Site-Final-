@@ -19,11 +19,11 @@ Se o Netlify já acusou um segredo exposto, remova a variável marcada como Secr
 
 No aplicativo Bling:
 
-`https://relppscosmeticoss.netlify.app/bling-callback.html`
+`https://relppscosmeticos.netlify.app/bling-callback.html`
 
 No Netlify:
 
-`BLING_REDIRECT_URI=https://relppscosmeticoss.netlify.app/bling-callback.html`
+`BLING_REDIRECT_URI=https://relppscosmeticos.netlify.app/bling-callback.html`
 
 Configure também:
 - `BLING_CLIENT_ID`
@@ -42,7 +42,7 @@ Execute no SQL Editor o bloco de `relpps_bling_oauth` do `supabase-schema.sql`.
 
 Depois de publicar, abra:
 
-`https://relppscosmeticoss.netlify.app/bling-connect.html`
+`https://relppscosmeticos.netlify.app/bling-connect.html`
 
 Clique em **CONECTAR AO BLING**. O Bling deve retornar para `bling-callback.html`.
 
@@ -54,7 +54,7 @@ Depois de conectar, configure:
 
 Abra:
 
-`https://relppscosmeticoss.netlify.app/homologacao-bling.html`
+`https://relppscosmeticos.netlify.app/homologacao-bling.html`
 
 O teste executa GET → POST → PUT → PATCH → DELETE e encadeia `x-bling-homologacao`.
 
@@ -64,6 +64,6 @@ Para produção:
 - `BLING_CREATE_ORDERS=true`
 - `CHECKOUT_TEST_MODE=false`
 - `INFINITEPAY_HANDLE=<sua InfiniteTag sem $>`
-- `PUBLIC_SITE_URL=https://relppscosmeticoss.netlify.app`
+- `PUBLIC_SITE_URL=https://relppscosmeticos.netlify.app`
 
 No InfinitePay, habilite o Checkout Integrado.

@@ -10,7 +10,7 @@ function json(statusCode, body, headers={}) {
   };
 }
 
-function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticoss.netlify.app").replace(/\/$/,""); }
+function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticos.netlify.app").replace(/\/$/,""); }
 function redirectUri(){ return process.env.BLING_REDIRECT_URI || `${publicSiteUrl()}/bling-callback.html`; }
 function oauthSecret(){ return process.env.BLING_OAUTH_STATE_SECRET || process.env.BLING_CLIENT_SECRET || ""; }
 function signState(payload){
@@ -146,10 +146,45 @@ function buildSaleOrder(payload={}){
   return order;
 }
 
+
+function isAllowedImageHost(raw){
+  try{
+    const u=new URL(String(raw||""));
+    const h=u.hostname.toLowerCase();
+    return u.protocol==="https:" && (h==="bling.com.br" || h.endsWith(".bling.com.br"));
+  }catch{return false;}
+}
+
+async function fetchBlingImage(rawUrl){
+  if(!isAllowedImageHost(rawUrl)) throw new Error("URL de imagem não permitida.");
+  const url=new URL(rawUrl);
+  let r=await fetch(url,{headers:{"Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8","User-Agent":"Relpps Cosméticos/1.0"}});
+  if((r.status===401||r.status===403)){
+    try{
+      const token=await tokenFromRefresh();
+      r=await fetch(url,{headers:{"Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8","User-Agent":"Relpps Cosméticos/1.0","Authorization":`Bearer ${token}`,"enable-jwt":"1"}});
+    }catch{}
+  }
+  if(!r.ok) throw new Error(`Imagem Bling HTTP ${r.status}`);
+  const type=r.headers.get("content-type")||"image/jpeg";
+  if(!/^image\//i.test(type)) throw new Error("Resposta não é imagem.");
+  const buf=Buffer.from(await r.arrayBuffer());
+  return {buf,type};
+}
+
 exports.handler = async (event) => {
   try {
     const method = event.httpMethod || "GET";
     const action = event.queryStringParameters?.action || "products";
+
+    if(action==="image-proxy"){
+      const raw=event.queryStringParameters?.url||"";
+      if(!raw) return json(400,{message:"Informe url."});
+      try{
+        const {buf,type}=await fetchBlingImage(raw);
+        return {statusCode:200,headers:{"Content-Type":type,"Cache-Control":"public, max-age=3600, s-maxage=3600","X-Content-Type-Options":"nosniff"},isBase64Encoded:true,body:buf.toString("base64")};
+      }catch(e){ return json(502,{message:e.message||"Falha ao carregar imagem do Bling."}); }
+    }
 
     if(action==="health") return json(200,{ok:true,service:"Relpps ↔ Bling",oauthRedirect:redirectUri()});
 
