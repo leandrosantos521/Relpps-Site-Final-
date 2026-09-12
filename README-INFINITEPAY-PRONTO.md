@@ -24,7 +24,7 @@ BLING_CLIENT_SECRET=SEU_CLIENT_SECRET
 BLING_REDIRECT_URI=https://relppscosmeticoss.netlify.app/bling-callback.html
 BLING_OAUTH_STATE_SECRET=UMA_SENHA_ALEATORIA_FORTE
 
-INFINITEPAY_HANDLE=sua_infinite_tag_sem_$
+INFINITEPAY_HANDLE=rps210323
 
 SUPABASE_URL=https://wsoetvctzybsdtsuydca.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=SUA_CHAVE_SECRET_DO_SUPABASE
@@ -60,3 +60,8 @@ https://relppscosmeticoss.netlify.app/bling-callback.html
 ```
 
 Sem `/` no final e sem usar o domínio antigo com um único `s`.
+
+
+## Handle da Relpps
+
+O ZIP já vem preparado com o Handle público da conta InfinitePay identificada no painel como `$rps210323`. O código usa `rps210323` como padrão; se preferir, você pode sobrescrever por `INFINITEPAY_HANDLE` nas variáveis do Netlify.

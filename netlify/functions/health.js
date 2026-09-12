@@ -13,7 +13,7 @@ exports.handler=async()=>{
     blingOrders:process.env.BLING_CREATE_ORDERS==='true',
     blingPendingSituation:Boolean(process.env.BLING_SITUACAO_AGUARDANDO_PAGAMENTO_ID),
     blingPaidSituation:Boolean(process.env.BLING_SITUACAO_PAGO_ID),
-    infinitePay:Boolean(String(process.env.INFINITEPAY_HANDLE||'').trim()),
+    infinitePay:Boolean(String(process.env.INFINITEPAY_HANDLE||'rps210323').trim()),
     supabase:Boolean(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY),
     shipping:Boolean(process.env.MELHOR_ENVIO_TOKEN&&String(process.env.STORE_POSTAL_CODE||'').replace(/\D/g,'').length===8),
     production:process.env.CHECKOUT_TEST_MODE==='false',

@@ -56,13 +56,17 @@ async function infinitePay(path, options={}){
   return data;
 }
 
+const DEFAULT_INFINITEPAY_HANDLE='rps210323';
+function infinitePayHandle(){
+  return String(process.env.INFINITEPAY_HANDLE||DEFAULT_INFINITEPAY_HANDLE).replace(/^\$/,'').trim();
+}
 function infinitePayConfigured(){
-  return Boolean(String(process.env.INFINITEPAY_HANDLE||'').trim());
+  return Boolean(infinitePayHandle());
 }
 
 async function createInfinitePayCheckout(order){
-  const handle=String(process.env.INFINITEPAY_HANDLE||'').replace(/^\$/,'').trim();
-  if(!handle) throw new Error('InfinitePay não configurado. Defina INFINITEPAY_HANDLE no Netlify.');
+  const handle=infinitePayHandle();
+  if(!handle) throw new Error('InfinitePay não configurado.');
 
   const total=money(order.totals?.total||0);
   if(total<=0) throw new Error('O total do pedido precisa ser maior que zero.');
@@ -120,7 +124,7 @@ async function markBlingPaymentApproved(blingOrderId,payment){
 }
 
 async function checkInfinitePayPayment({orderNsu,transactionNsu,slug}){
-  const handle=String(process.env.INFINITEPAY_HANDLE||'').replace(/^\$/,'').trim();
+  const handle=infinitePayHandle();
   if(!handle) throw new Error('InfinitePay não configurado.');
   if(!orderNsu || !transactionNsu || !slug) throw new Error('Dados insuficientes para consultar o pagamento InfinitePay.');
   return infinitePay('/payment_check',{method:'POST',body:JSON.stringify({
