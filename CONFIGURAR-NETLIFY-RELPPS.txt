@@ -1,0 +1,31 @@
+RELPPS — CONFIGURAÇÃO DE PRODUÇÃO
+
+DOMÍNIO:
+https://relppscosmeticoss.netlify.app
+
+BLING OAuth Redirect URI:
+https://relppscosmeticoss.netlify.app/bling-callback.html
+
+INFINITEPAY WEBHOOK:
+https://relppscosmeticoss.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook
+
+VARIÁVEIS OBRIGATÓRIAS NO NETLIFY:
+BLING_CLIENT_ID
+BLING_CLIENT_SECRET
+BLING_REFRESH_TOKEN
+BLING_REDIRECT_URI=https://relppscosmeticoss.netlify.app/bling-callback.html
+BLING_CREATE_ORDERS=true
+BLING_SITUACAO_AGUARDANDO_PAGAMENTO_ID
+BLING_SITUACAO_PAGO_ID
+INFINITEPAY_HANDLE
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+PUBLIC_SITE_URL=https://relppscosmeticoss.netlify.app
+CHECKOUT_TEST_MODE=false
+
+IMPORTANTE:
+- Não coloque BLING_CLIENT_SECRET, BLING_REFRESH_TOKEN ou SUPABASE_SERVICE_ROLE_KEY no frontend.
+- No Bling, cadastre exatamente o Redirect URI acima.
+- Na InfinitePay, use a InfiniteTag/handle da conta real, sem o símbolo $.
+- O checkout usa InfinitePay para Pix e cartão.
+- Dinheiro fica disponível somente para retirada presencial.
