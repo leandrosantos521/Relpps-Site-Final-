@@ -8,3 +8,11 @@ O site agora:
 3. usa apenas um placeholder gerado pelo próprio JavaScript quando o produto ainda não possui imagem no Bling.
 
 Logo, banners e imagens institucionais da identidade da Relpps continuam no pacote porque não são fotos de produtos.
+
+
+## Ajuste de velocidade — versão final
+- A vitrine não consulta detalhes de todos os produtos ao abrir a página.
+- Só a página atualmente visível hidrata imagens que faltarem.
+- As imagens dos cards são carregadas com prioridade alta.
+- O proxy de imagens não usa o limitador de 3 req/s da API REST; o cache HTTP foi ampliado.
+- O limite de 3 req/s continua sendo respeitado para as chamadas REST do Bling.

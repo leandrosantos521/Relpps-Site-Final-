@@ -82,7 +82,10 @@ async function blingFetch(path, options={}, attempt=0) {
     await new Promise(res=>setTimeout(res, retryAfter>0 ? retryAfter*1000 : 900*(attempt+1)));
     return blingFetch(path, options, attempt+1);
   }
-  if(!r.ok) throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
+  if(!r.ok){
+    if(r.status===403) throw new Error('Bling HTTP 403: o aplicativo não tem o escopo/permissão necessário para esta operação. Reautorize o aplicativo com Pedido de Venda (order) habilitado.');
+    throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
+  }
   return data;
 }
 
@@ -118,12 +121,13 @@ async function proxyBlingImage(rawUrl){
   const cacheKey=target.toString();
   const cached=imageMemoryCache.get(cacheKey);
   if(cached && cached.expires>Date.now()) return cached;
-  const token=await tokenFromRefresh();
-  await waitBlingRequestSlot();
-  let response=await fetch(target,{headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0'},redirect:'follow'});
-  if((response.status===401||response.status===403)&&token){
-    await waitBlingRequestSlot();
-    response=await fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0'},redirect:'follow'});
+  // CDN de imagens não deve compartilhar o limitador da API REST (3 req/s).
+  // Isso deixava dezenas de imagens esperando em fila e tornava a vitrine lenta.
+  // Tentamos primeiro sem token e, somente se o CDN exigir autenticação, com Bearer.
+  let response=await fetch(target,{headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmeticoss.netlify.app/'},redirect:'follow'});
+  if((response.status===401||response.status===403)){
+    const token=await tokenFromRefresh();
+    response=await fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmeticoss.netlify.app/'},redirect:'follow'});
   }
   if(!response.ok) throw new Error(`Imagem HTTP ${response.status}`);
   const type=String(response.headers.get('content-type')||'').toLowerCase();
@@ -241,7 +245,7 @@ exports.handler = async (event) => {
       if(!rawUrl) return json(400,{message:"Informe a URL da imagem."});
       try{
         const image=await proxyBlingImage(rawUrl);
-        return {statusCode:200,headers:{"Content-Type":image.contentType,"Cache-Control":"public,max-age=21600,stale-while-revalidate=86400","X-Content-Type-Options":"nosniff"},isBase64Encoded:true,body:image.buffer.toString("base64")};
+        return {statusCode:200,headers:{"Content-Type":image.contentType,"Cache-Control":"public,max-age=604800,stale-while-revalidate=2592000","X-Content-Type-Options":"nosniff"},isBase64Encoded:true,body:image.buffer.toString("base64")};
       }catch(e){
         console.error('[Bling imagem]',e.message);
         return json(502,{message:'Não foi possível carregar a imagem do Bling.'});

@@ -571,12 +571,11 @@ async function loadProducts(){
     if(Array.isArray(data.products) && data.products.length){
       applyProductSource(data.products,"bling");
       try{localStorage.setItem("relpps-bling-products-cache",JSON.stringify(data.products));}catch{}
-      await hydrateBlingProductImages();
     }
   }catch(e){
     try{
       const saved=JSON.parse(localStorage.getItem("relpps-bling-products-cache")||"[]");
-      if(Array.isArray(saved)&&saved.length){applyProductSource(saved,"localStorage");await hydrateBlingProductImages();}
+      if(Array.isArray(saved)&&saved.length){applyProductSource(saved,"localStorage");}
     }catch{}
     console.info("Bling indisponível — usando catálogo em cache.", e);
   }
@@ -693,21 +692,24 @@ async function hydratePageImages(pageList){
   const batchSize=12;
   const cache={};
   try{
-    for(let i=0;i<ids.length;i+=batchSize){
+    const batches=[];
+    for(let i=0;i<ids.length;i+=batchSize) batches.push(ids.slice(i,i+batchSize));
+    await Promise.all(batches.map(async batch=>{
       if(run!==imageHydrationRun) return;
-      const batch=ids.slice(i,i+batchSize);
-      const r=await fetch(`/api/bling?action=product-images&ids=${encodeURIComponent(batch.join(","))}`,{headers:{"Accept":"application/json"}});
-      if(!r.ok) continue;
-      const data=await r.json(); const map=data?.images||{};
-      for(const p of targets){
-        const urls=Array.isArray(map[String(p.id)])?map[String(p.id)].filter(Boolean):[];
-        if(!urls.length) continue;
-        p.images=[...new Set(urls)]; p.image=blingImageProxy(p.images[0]); cache[String(p.id)]=p.images;
-        const selector=`.product-card [data-view="${CSS.escape(String(p.id))}"] img`;
-        const card=document.querySelector(selector);
-        if(card){card.onerror=()=>{card.onerror=null;card.src=safeImageFallback()};card.src=p.image;}
-      }
-    }
+      try{
+        const r=await fetch(`/api/bling?action=product-images&ids=${encodeURIComponent(batch.join(","))}`,{headers:{"Accept":"application/json"}});
+        if(!r.ok) return;
+        const data=await r.json(); const map=data?.images||{};
+        for(const p of targets){
+          const urls=Array.isArray(map[String(p.id)])?map[String(p.id)].filter(Boolean):[];
+          if(!urls.length) continue;
+          p.images=[...new Set(urls)]; p.image=blingImageProxy(p.images[0]); cache[String(p.id)]=p.images;
+          const selector=`.product-card [data-view="${CSS.escape(String(p.id))}"] img`;
+          const card=document.querySelector(selector);
+          if(card){card.onerror=()=>{card.onerror=null;card.src=safeImageFallback()};card.src=p.image;}
+        }
+      }catch{}
+    }));
     try{
       const old=JSON.parse(localStorage.getItem("relpps-bling-image-cache")||"{}");
       localStorage.setItem("relpps-bling-image-cache",JSON.stringify({...old,...cache}));
@@ -739,7 +741,7 @@ function renderProducts(){
     card.classList.add("reveal-item");
     card.innerHTML=`
       <button class="product-image product-detail-trigger" type="button" data-view="${p.id}" aria-label="Ver detalhes de ${p.name}">
-        <img src="${p.image}" alt="${p.name}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=safeImageFallback()">
+        <img src="${p.image}" alt="${p.name}" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=safeImageFallback()">
         <span class="stock-dot">${soldOut?"Esgotado":(Number(p.stock)<=5?"Últimas unidades":"Disponível")}</span>
       </button>
       <div class="product-info">
