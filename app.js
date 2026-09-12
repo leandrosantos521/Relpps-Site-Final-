@@ -2496,7 +2496,13 @@ async function handleCheckoutReturn(){
       order=await getCheckoutOrderStatus(id);
     }
     lastCreatedOrder={id:order.id,status:order.status,paymentStatus:order.paymentStatus,delivery:order.delivery,totals:order.totals};
-    if(order.paymentStatus==="APPROVED" || order.paymentStatus==="FAILED" || order.paymentStatus==="AWAITING_PAYMENT") { window.location.href=`pedido.html?order=${encodeURIComponent(order.id)}`; return; }
+    if(order.paymentStatus==="APPROVED" || order.paymentStatus==="FAILED" || order.paymentStatus==="AWAITING_PAYMENT") {
+      const q=new URLSearchParams({order:order.id});
+      if(params.get("transaction_nsu")) q.set("transaction_nsu",params.get("transaction_nsu"));
+      if(params.get("slug")) q.set("slug",params.get("slug"));
+      if(params.get("capture_method")) q.set("capture_method",params.get("capture_method"));
+      if(params.get("receipt_url")) q.set("receipt_url",params.get("receipt_url"));
+      window.location.href=`pedido.html?${q.toString()}`; return; }
     const fakeData={name:currentProfile?.name||currentUser?.user_metadata?.name||"Cliente",payment:order.paymentStatus==="APPROVED"?"card":"card"};
     showPaymentResult(lastCreatedOrder,fakeData);
     if(order.paymentStatus==="APPROVED") toast("Pagamento confirmado. Pedido liberado.");

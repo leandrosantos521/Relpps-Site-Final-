@@ -1,10 +1,15 @@
+const {getBlingOAuth}=require('./_lib/bling-oauth-store');
 function json(statusCode, body){
   return {statusCode,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"},body:JSON.stringify(body)};
 }
 
 exports.handler=async()=>{
+  let oauth=null;
+  try{oauth=await getBlingOAuth();}catch{}
+  const blingCredentials=Boolean(process.env.BLING_CLIENT_ID&&process.env.BLING_CLIENT_SECRET);
+  const blingToken=Boolean(process.env.BLING_ACCESS_TOKEN||process.env.BLING_REFRESH_TOKEN||oauth?.access_token||oauth?.refresh_token);
   const checks={
-    bling:Boolean(process.env.BLING_CLIENT_ID&&process.env.BLING_CLIENT_SECRET&&process.env.BLING_REFRESH_TOKEN),
+    bling:Boolean(blingCredentials&&blingToken),
     blingOrders:process.env.BLING_CREATE_ORDERS==='true',
     blingPendingSituation:Boolean(process.env.BLING_SITUACAO_AGUARDANDO_PAGAMENTO_ID),
     blingPaidSituation:Boolean(process.env.BLING_SITUACAO_PAGO_ID),
@@ -14,6 +19,7 @@ exports.handler=async()=>{
     production:process.env.CHECKOUT_TEST_MODE==='false',
     publicSite:Boolean(process.env.PUBLIC_SITE_URL)
   };
-  const ok=checks.bling&&checks.blingOrders&&checks.blingPendingSituation&&checks.blingPaidSituation&&checks.infinitePay&&checks.supabase&&checks.production&&checks.publicSite;
-  return json(ok?200:503,{ok,service:'Relpps production preflight',checks,warning:checks.shipping?'':'Frete Melhor Envio ainda não configurado; retirada presencial continua disponível.'});
+  // relpps_orders is optional for the checkout fallback; it is still recommended for history/coupons.
+  const ok=checks.bling&&checks.blingOrders&&checks.infinitePay&&checks.production&&checks.publicSite;
+  return json(ok?200:503,{ok,service:'Relpps production preflight',checks,warning:checks.shipping?'':'Frete Melhor Envio ainda não configurado; retirada presencial continua disponível.',note:'A tabela relpps_orders do Supabase é recomendada, mas não bloqueia o checkout InfinitePay.'});
 };

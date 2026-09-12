@@ -107,7 +107,7 @@ function productStock(product){
   return Number(product?.estoque?.saldoVirtualTotal ?? product?.estoque?.saldoFisicoTotal ?? product?.estoque?.saldo ?? product?.saldoVirtual ?? product?.saldo ?? 0);
 }
 
-async function createSaleOrder({orderId,customer,delivery,items,totals,payment,discounts}){
+async function createSaleOrder({orderId,customer,delivery,items,totals,payment,discounts,relppsMeta={}}){
   const contact=await findOrCreateContact(customer,delivery);
   if(!contact?.id) throw new Error('Não foi possível localizar/criar o cliente no Bling.');
 
@@ -172,7 +172,7 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
     total:Number(total.toFixed(2)),
     desconto:{valor:Number((automaticDiscount+couponDiscount).toFixed(2)),unidade:'REAL'},
     observacoes:`Pedido online Relpps ${orderId} | ${paymentKind==='cash'?'DINHEIRO NA RETIRADA':paymentKind==='pix'?'PIX ONLINE':'CARTÃO ONLINE'} | Status: Aguardando pagamento`,
-    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: R$ ${shipping.toFixed(2)} | Gateway: ${paymentKind==='cash'?'não utilizado':'InfinitePay'}`,
+    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: R$ ${shipping.toFixed(2)} | Gateway: ${paymentKind==='cash'?'não utilizado':'InfinitePay'} | RELPPS_META:${JSON.stringify({method:relppsMeta.method||delivery?.method||'delivery',payment:relppsMeta.payment||payment,fulfillmentStatus:relppsMeta.fulfillmentStatus||'Aguardando pagamento'})}`,
     transporte:{
       fretePorConta:1,
       frete:Number(shipping.toFixed(2)),
@@ -187,4 +187,20 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
   return {id:data.id,number:data.numero,payload:order,calculated:{subtotal:baseSubtotal,automaticDiscount,couponDiscount,shipping,total,automaticItems}};
 }
 
-module.exports={blingFetch,getProduct,productPrice,productStock,createSaleOrder,setOrderSituation,situationId,cleanDoc};
+async function findSaleOrderByStoreNumber(orderNumber){
+  const needle=String(orderNumber||'').trim();
+  if(!needle) return null;
+  const q=new URLSearchParams({pagina:'1',limite:'100'});
+  q.append('numerosLojas[]',needle);
+  const data=await blingFetch(`/pedidos/vendas?${q.toString()}`);
+  const rows=Array.isArray(data?.data)?data.data:[];
+  return rows.find(x=>String(x?.numeroLoja||'')===needle) || rows[0] || null;
+}
+
+async function getSaleOrder(id){
+  if(!id) return null;
+  const data=await blingFetch(`/pedidos/vendas/${encodeURIComponent(id)}`);
+  return data?.data || data || null;
+}
+
+module.exports={blingFetch,getProduct,productPrice,productStock,createSaleOrder,setOrderSituation,situationId,cleanDoc,findSaleOrderByStoreNumber,getSaleOrder};

@@ -207,8 +207,13 @@ exports.handler = async (event) => {
       if(!oauthSecret()) return json(500,{message:"BLING_CLIENT_SECRET não configurado."});
       const state=signState({created_at:Date.now(),nonce:crypto.randomBytes(16).toString("hex")});
       const u=new URL("https://www.bling.com.br/Api/v3/oauth/authorize");
-      u.searchParams.set("response_type","code"); u.searchParams.set("client_id",clientId); u.searchParams.set("state",state);
-      u.searchParams.set("redirect_uri",redirectUri());
+      u.searchParams.set("response_type","code");
+      u.searchParams.set("client_id",clientId);
+      u.searchParams.set("state",state);
+      // O Bling usa a URL cadastrada no aplicativo quando redirect_uri não é enviado.
+      // Isso evita falhas por diferença de barra final, protocolo ou domínio entre
+      // o cadastro do app e a URL enviada no authorize.
+      // A URL esperada no cadastro é: https://relppscosmeticoss.netlify.app/bling-callback.html
       return {statusCode:302,headers:{Location:u.toString(),"Cache-Control":"no-store"},body:""};
     }
 

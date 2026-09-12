@@ -19,3 +19,10 @@ Use exatamente:
 A conexão autorizada pelo OAuth é armazenada na tabela `relpps_bling_oauth` do Supabase. O backend passa a usar o refresh token armazenado e renova os tokens quando necessário.
 
 Antes de testar, execute o bloco de OAuth do arquivo `supabase-schema.sql` no Supabase.
+
+
+## URL obrigatória no aplicativo Bling
+
+Cadastre exatamente: `https://relppscosmeticoss.netlify.app/bling-callback.html`
+
+O fluxo de autorização deste ZIP não envia `redirect_uri` na URL de authorize; o Bling usa a URL cadastrada no aplicativo, conforme a documentação oficial.

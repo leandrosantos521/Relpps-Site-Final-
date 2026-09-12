@@ -20,14 +20,17 @@
   const code=params.get('code');
   const state=params.get('state');
   const error=params.get('error');
+  const errorDescription=params.get('error_description');
   const title=document.getElementById('title');
   const message=document.getElementById('message');
   const spinner=document.getElementById('spinner');
   if(error){
-    spinner.style.display='none'; title.textContent='Conexão cancelada'; message.className='error'; message.textContent=params.get('error_description')||'O Bling não autorizou a conexão.'; return;
+    spinner.style.display='none'; title.textContent='Conexão cancelada'; message.className='error'; message.textContent=errorDescription||'O Bling não autorizou a conexão.'; return;
   }
   if(!code||!state){
-    spinner.style.display='none'; title.textContent='Não foi possível conectar'; message.className='error'; message.textContent='O Bling não retornou o código de autorização. Inicie a conexão novamente.'; return;
+    spinner.style.display='none'; title.textContent='Não foi possível conectar'; message.className='error'; message.textContent='O Bling voltou para o callback sem code/state. Confira no aplicativo Bling se a URL de redirecionamento está EXATAMENTE como abaixo e tente novamente.';
+    const pre=document.createElement('div'); pre.style='margin-top:16px;padding:14px;background:#f7f3ec;border:1px solid #e6ddd0;font-size:13px;line-height:1.5;word-break:break-all'; pre.textContent='https://relppscosmeticoss.netlify.app/bling-callback.html'; document.querySelector('.box').appendChild(pre);
+    return;
   }
   try{
     const r=await fetch('/api/bling?action=callback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,state})});
