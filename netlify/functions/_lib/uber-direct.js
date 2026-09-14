@@ -9,7 +9,7 @@ async function getAccessToken(){
   if(!enabled()) return null;
   if(tokenCache.token && Date.now()<tokenCache.expiresAt-60000) return tokenCache.token;
   const clientId=env('UBER_DIRECT_CLIENT_ID','UBER_CLIENT_ID'); const clientSecret=env('UBER_DIRECT_CLIENT_SECRET','UBER_CLIENT_SECRET');
-  const body=new URLSearchParams({client_id:clientId,client_secret:clientSecret,grant_type:'client_credentials',scope:'eats.deliveries direct.organizations'});
+  const body=new URLSearchParams({client_id:clientId,client_secret:clientSecret,grant_type:'client_credentials',scope:'eats.deliveries'});
   const r=await fetch('https://auth.uber.com/oauth/v2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
   const data=await r.json().catch(()=>({})); if(!r.ok) throw new Error(data?.error_description||data?.error||`Uber OAuth HTTP ${r.status}`);
   tokenCache={token:data.access_token,expiresAt:Date.now()+Number(data.expires_in||2592000)*1000}; return tokenCache.token;

@@ -1,5 +1,6 @@
 const {createSaleOrder,setOrderSituation,situationId,findSaleOrderByStoreNumber,getSaleOrder}=require('./_lib/bling-client');
 const {getOrder,insertOrder,updateOrder,getCoupon,markCouponUsed}=require('./_lib/store');
+const crypto=require('crypto');
 const {createDelivery: createUberDelivery,quote: quoteUberDelivery}=require('./_lib/uber-direct');
 
 function json(statusCode,body,headers={}){return{statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...headers},body:JSON.stringify(body)}}
@@ -9,6 +10,20 @@ function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://rel
 function storeConfigured(){return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)}
 function money(v){return Number(Number(v||0).toFixed(2));}
 function adminSecretOk(event,body={}){const expected=String(process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim(); const supplied=String(body.secret||event.headers?.['x-relpps-admin-secret']||event.headers?.['X-Relpps-Admin-Secret']||'').trim(); return Boolean(expected && supplied && supplied===expected);}
+
+function verifyShippingQuoteToken(token,{provider,cep,price,service}){
+  const secret=String(process.env.SHIPPING_QUOTE_SECRET||process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim();
+  if(!secret) return {ok:!isProduction(),price:Number(price||0)};
+  const parts=String(token||'').split('.'); if(parts.length!==2) return {ok:false};
+  const [payload,sig]=parts; const expected=crypto.createHmac('sha256',secret).update(payload).digest('base64url');
+  if(!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(expected))) return {ok:false};
+  let data={}; try{data=JSON.parse(Buffer.from(payload,'base64url').toString('utf8'))}catch{return {ok:false}}
+  if(data.provider!==provider || data.cep!==String(cep||'').replace(/\D/g,'') || Math.abs(Number(data.price)-Number(price))>0.01) return {ok:false};
+  if(service && data.service && String(data.service)!==String(service)) return {ok:false};
+  if(Number(data.expiresAt||0)<Date.now()) return {ok:false,expired:true};
+  return {ok:true,price:Number(data.price||0),quoteId:data.quoteId||null};
+}
+
 function fulfillmentForCreate(method,payment){ if(method==='pickup_uber') return payment==='cash'?'Aguardando pagamento na retirada':'Aguardando pagamento'; if(method==='pickup') return payment==='cash'?'Aguardando pagamento na retirada':'Aguardando pagamento'; return 'Aguardando pagamento'; }
 
 // Supabase continua sendo usado quando a tabela existe, mas o checkout não trava
@@ -133,6 +148,8 @@ async function checkInfinitePayPayment({orderNsu,transactionNsu,slug}){
 }
 
 
+function isPickupMethodServer(method){return method==='pickup'||method==='pickup_uber'}
+
 async function createOrder(body){
   const payment=String(body.payment||'');
   if(!['pix_online','card','cash'].includes(payment)) throw new Error('Forma de pagamento inválida.');
@@ -147,11 +164,18 @@ async function createOrder(body){
     if(!coupon) throw new Error('Cupom inválido, expirado ou já utilizado.');
   }
 
-  const baseOrder={...body,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:fulfillmentForCreate(body.delivery?.method,payment)};
-  if(body.delivery?.method==='pickup') baseOrder.delivery={...(body.delivery||{}),pickupAddress:process.env.STORE_PICKUP_ADDRESS||'C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'};
+  const delivery={...(body.delivery||{})};
+  if(!isPickupMethodServer(delivery.method)){
+    const sh=delivery.shipping||{};
+    const verified=verifyShippingQuoteToken(sh.quote_token,{provider:sh.provider,cep:delivery.cep,price:sh.price,service:sh.id||sh.service});
+    if(!verified.ok) throw new Error(verified.expired?'A cotação do frete expirou. Calcule o frete novamente.':'Cotação de frete inválida. Calcule o frete novamente.');
+    delivery.shipping={...sh,price:verified.price,quote_id:verified.quoteId||sh.quote_id||sh.id};
+  } else delivery.shipping={...(delivery.shipping||{}),price:0};
+  const baseOrder={...body,delivery,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:fulfillmentForCreate(delivery.method,payment)};
+  if(delivery.method==='pickup') baseOrder.delivery={...delivery,pickupAddress:process.env.STORE_PICKUP_ADDRESS||'C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'};
   const dbRow={
     id,status:'AWAITING_PAYMENT',payment_status:'AWAITING_PAYMENT',payment_method:payment,
-    customer:body.customer||{},delivery:baseOrder.delivery||{},items:body.items||[],totals:body.totals||{},discounts:body.discounts||{},
+    customer:body.customer||{},delivery:baseOrder.delivery||delivery||{},items:body.items||[],totals:body.totals||{},discounts:body.discounts||{},
     raw:baseOrder
   };
   await safeInsertOrder(dbRow);
@@ -159,7 +183,7 @@ async function createOrder(body){
   let bling=null;
   if(process.env.BLING_CREATE_ORDERS==='true'){
     try{
-      bling=await createSaleOrder({orderId:id,customer:body.customer,delivery:body.delivery,items:body.items,totals:body.totals,payment,discounts:{...body.discounts,coupon:coupon?.valor||0},relppsMeta:{method:body.delivery?.method||'delivery',payment,fulfillmentStatus:baseOrder.fulfillmentStatus}});
+      bling=await createSaleOrder({orderId:id,customer:body.customer,delivery:delivery,items:body.items,totals:body.totals,payment,discounts:{...body.discounts,coupon:coupon?.valor||0},relppsMeta:{method:body.delivery?.method||'delivery',payment,fulfillmentStatus:baseOrder.fulfillmentStatus}});
       baseOrder.totals={...(body.totals||{}),...bling.calculated};
       await safeUpdateOrder(id,{bling_order_id:bling.id,totals:baseOrder.totals,raw:{...baseOrder,bling}});
     }catch(e){

@@ -366,52 +366,29 @@ function productRawDetailRows(p){
   return rows;
 }
 
-function normalizeBlingImageUrl(value){
-  const raw=String(value||'').trim();
-  if(!raw) return '';
-  try{ const u=new URL(raw,window.location.href); if(u.protocol==='http:') u.protocol='https:'; return u.toString(); }
-  catch{return raw;}
-}
-function isLikelyProductPageUrl(value){
-  try{
-    const u=new URL(String(value||''));
-    const path=(u.pathname||'').toLowerCase();
-    return /\/(produto|produtos|product|products|catalogo|catalog|item|itens)(?:\/|$)/.test(path)
-      && !/\.(png|jpe?g|webp|gif|avif|svg)(?:$|[?#])/i.test(path)
-      && !/(imagem|image|foto|media|midia|cdn|upload|thumb|thumbnail)/i.test(path+u.search);
-  }catch{return false;}
-}
-function isLikelyImageValue(value,key=''){
-  const x=String(value||'').trim(), k=String(key||'').toLowerCase();
-  if(!/^https?:\/\//i.test(x) && !x.startsWith('/') && !x.startsWith('./')) return false;
-  if(/^(linkexterno|urlproduto|urlprodutopagina|pagina|paginaweb|site|website)$/.test(k)) return false;
-  if(isLikelyProductPageUrl(x)) return false;
-  return /\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)
-    || /(bling\.com\.br|blingcdn\.com|cdn|image|imagem|foto|media|midia|upload|thumb|thumbnail)/i.test(x)
-    || /^(link|url|src|href)$/i.test(k);
-}
 function blingImageUrls(p){
   const urls=[]; const seen=new Set();
-  const explicitKeys=['imagemURL','imagemUrl','imagemurl','urlImagem','urlimagem','imagemPrincipal','imagemprincipal','linkOriginal','linkMiniatura','thumbnail','miniatura','imagem','imagens','fotos','anexos','midias','media','images'];
-  const push=(v,key='',imageContext=false)=>{
-    if(v==null) return;
+  const imageKey=/^(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)$/i;
+  const looksLikeImage=(x)=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
+  const push=(v,key='')=>{
+    if(!v)return;
     if(typeof v==='string'){
-      const x=normalizeBlingImageUrl(v);
-      if((isLikelyImageValue(x,key)||imageContext) && !isLikelyProductPageUrl(x) && /^https?:\/\//i.test(x) && !seen.has(x)){seen.add(x);urls.push(x);}
+      const x=v.trim();
+      if((/^https?:\/\//i.test(x)||x.startsWith('./')||x.startsWith('/')) && (imageKey.test(String(key))||looksLikeImage(x)) && !seen.has(x)){
+        seen.add(x); urls.push(x);
+      }
       return;
     }
-    if(Array.isArray(v)){v.forEach(item=>push(item,key,imageContext));return;}
+    if(Array.isArray(v)){v.forEach(item=>push(item,key));return;}
     if(typeof v==='object'){
       for(const [k,val] of Object.entries(v)){
-        const lower=k.toLowerCase();
-        if(/^(linkexterno|urlproduto|urlprodutopagina|pagina|paginaweb|site|website)$/.test(lower)) continue;
-        const next=imageContext || /^(imagem|imagens|foto|fotos|anexo|anexos|midia|midias|media|images|image|thumbnail|miniatura|linkoriginal|linkminiatura|urlimagem|imagemurl|imagemprincipal)$/i.test(k);
-        if(isLikelyImageValue(val,k)||typeof val==='object') push(val,k,next);
+        if(imageKey.test(k) || typeof val==='object') push(val,k);
       }
     }
   };
-  explicitKeys.forEach(k=>push(p?.[k],k,/^(imagem|imagens|fotos|anexos|midias|media|images|thumbnail|miniatura)$/i.test(k)));
-  if(!urls.length) push(p,'root',false);
+  // Campos conhecidos do Bling + varredura profunda para diferenças entre respostas.
+  ['imagem','imagemUrl','urlImagem','imagemPrincipal','imagens','fotos','anexos','midias','media','images'].forEach(k=>push(p?.[k],k));
+  if(!urls.length) push(p,'root');
   return urls;
 }
 
@@ -419,15 +396,21 @@ function blingImageProxy(url){
   const raw=String(url||"").trim();
   if(!/^https?:\/\//i.test(raw)) return raw;
   try{
-    const u=new URL(raw), host=u.hostname.toLowerCase();
+    const u=new URL(raw);
+    const host=u.hostname.toLowerCase();
     const isBling=host==='bling.com.br'||host.endsWith('.bling.com.br')||host==='blingcdn.com'||host.endsWith('.blingcdn.com');
+    // O navegador não acessa diretamente algumas imagens/CDNs do Bling. Para esses
+    // hosts usamos a Function, que busca a foto no servidor com o OAuth do Bling.
     return isBling ? `/api/bling?action=image&url=${encodeURIComponent(u.toString())}` : u.toString();
   }catch{return raw;}
 }
 function imageCandidates(p){
+  // Prefere a imagem original do Bling e deixa miniaturas/URLs com resize por último.
+  // Isso evita que o catálogo escolha uma thumbnail pequena e pareça borrada no PC ou mobile.
   const urls=blingImageUrls(p).map(blingImageProxy).filter(Boolean);
   const score=(url)=>{
-    const x=String(url).toLowerCase(); let n=0;
+    const x=String(url).toLowerCase();
+    let n=0;
     if(!/(?:thumb|thumbnail|miniatura|preview|small|(?:^|[?&])w=|(?:^|[?&])h=|width=|height=|resize|size=)/.test(x)) n+=100;
     if(/original|full|large|alta|high|quality/.test(x)) n+=20;
     if(/\.png(?:$|\?)|\.webp(?:$|\?)/.test(x)) n+=2;
@@ -523,12 +506,7 @@ function applyProductSource(rawProducts, sourceLabel="catálogo"){
   products = groupBlingProducts(rawProducts);
   try{
     const imageCache=JSON.parse(localStorage.getItem("relpps-bling-image-cache")||"{}");
-    products.forEach(p=>{
-      const urls=Array.isArray(imageCache[String(p.id)])
-        ? imageCache[String(p.id)].filter(u=>u && !isLikelyProductPageUrl(String(u)))
-        : [];
-      if(urls.length){p.images=urls;p.image=urls[0];}
-    });
+    products.forEach(p=>{const urls=imageCache[String(p.id)];if(Array.isArray(urls)&&urls.length){p.images=urls;p.image=urls[0];}});
   }catch{}
   rebuildAreaFilter();
   rebuildCategoryFilter();
@@ -708,32 +686,27 @@ let imageHydrationRun=0;
 async function hydratePageImages(pageList){
   if(!window.RELPPS_CONFIG?.BLING_API_ENABLED || !Array.isArray(pageList) || !pageList.length) return;
   const run=++imageHydrationRun;
-  const hasRealImage=p=>{
-    const list=Array.isArray(p?.images)?p.images:[p?.image];
-    return list.some(src=>src && !String(src).startsWith('data:image/svg+xml') && !isLikelyProductPageUrl(String(src)));
-  };
-  const targets=pageList.filter(p=>!hasRealImage(p));
+  // Só busca detalhes dos produtos que ainda não têm uma imagem real.
+  const targets=pageList.filter(p=>!Array.isArray(p.images)||!p.images.some(Boolean)||String(p.image||'').startsWith('data:image/svg+xml'));
   const ids=targets.map(p=>String(p.id)).filter(Boolean);
-  if(!ids.length) return;
-  const batchSize=12, cache={};
+  const batchSize=12;
+  const cache={};
   try{
-    const batches=[]; for(let i=0;i<ids.length;i+=batchSize) batches.push(ids.slice(i,i+batchSize));
+    const batches=[];
+    for(let i=0;i<ids.length;i+=batchSize) batches.push(ids.slice(i,i+batchSize));
     await Promise.all(batches.map(async batch=>{
       if(run!==imageHydrationRun) return;
       try{
         const r=await fetch(`/api/bling?action=product-images&ids=${encodeURIComponent(batch.join(","))}`,{headers:{"Accept":"application/json"}});
         if(!r.ok) return;
-        const data=await r.json(), map=data?.images||{};
+        const data=await r.json(); const map=data?.images||{};
         for(const p of targets){
           const urls=Array.isArray(map[String(p.id)])?map[String(p.id)].filter(Boolean):[];
           if(!urls.length) continue;
           p.images=[...new Set(urls)]; p.image=blingImageProxy(p.images[0]); cache[String(p.id)]=p.images;
-          const selector=`.product-card [data-view="${CSS.escape(String(p.id))}"] img`, card=document.querySelector(selector);
-          if(card){
-            const candidates=p.images.map(blingImageProxy).filter(Boolean); let idx=0;
-            card.onerror=()=>{idx++; if(idx<candidates.length){card.src=candidates[idx];}else{card.onerror=null;card.src=safeImageFallback();}};
-            card.src=candidates[0]||safeImageFallback();
-          }
+          const selector=`.product-card [data-view="${CSS.escape(String(p.id))}"] img`;
+          const card=document.querySelector(selector);
+          if(card){card.onerror=()=>{card.onerror=null;card.src=safeImageFallback()};card.src=p.image;}
         }
       }catch{}
     }));
@@ -741,7 +714,7 @@ async function hydratePageImages(pageList){
       const old=JSON.parse(localStorage.getItem("relpps-bling-image-cache")||"{}");
       localStorage.setItem("relpps-bling-image-cache",JSON.stringify({...old,...cache}));
     }catch{}
-  }catch(e){console.info("Imagens do Bling indisponíveis nesta página.",e);}
+  }catch(e){ console.info("Imagens do Bling indisponíveis nesta página.",e); }
 }
 
 function renderProducts(){
@@ -768,7 +741,7 @@ function renderProducts(){
     card.classList.add("reveal-item");
     card.innerHTML=`
       <button class="product-image product-detail-trigger" type="button" data-view="${p.id}" aria-label="Ver detalhes de ${p.name}">
-        <img src="${p.image}" alt="${p.name}" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" data-image-product="${p.id}">
+        <img src="${p.image}" alt="${p.name}" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=safeImageFallback()">
         <span class="stock-dot">${soldOut?"Esgotado":(Number(p.stock)<=5?"Últimas unidades":"Disponível")}</span>
       </button>
       <div class="product-info">
@@ -780,17 +753,6 @@ function renderProducts(){
           <button data-add="${p.id}" ${soldOut?"disabled":""}>${soldOut?"ESGOTADO":"COMPRAR"}</button>
         </div>
       </div>`;
-    const cardImg=card.querySelector('img[data-image-product]');
-    if(cardImg){
-      const candidates=(Array.isArray(p.images)?p.images:[]).map(blingImageProxy).filter(Boolean);
-      let imageIndex=Math.max(0,candidates.indexOf(String(p.image||'')));
-      if(!candidates.length && p.image) candidates.push(String(p.image));
-      cardImg.onerror=()=>{
-        imageIndex++;
-        if(imageIndex<candidates.length){ cardImg.src=candidates[imageIndex]; }
-        else { cardImg.onerror=null; cardImg.src=safeImageFallback(); }
-      };
-    }
     grid.appendChild(card);
   });
   renderCatalogPagination(totalPages,list.length);
@@ -1594,14 +1556,21 @@ function renderCartPageShipping(){
 async function quoteCartPageShipping(){
   if(cartPageReceiveMode==="pickup"){ updateCartPageReceiveUI(); return; }
   const input=$("#cartPageCep"); const cep=(input?.value||"").replace(/\D/g,"");
-  if(cep.length!==8){toast("Informe um CEP válido para calcular o frete.");return;}
-  input.value=formatCep(cep); const btn=$("#cartPageQuoteButton"); const old=btn.textContent; btn.disabled=true;btn.textContent="Calculando…";
+  if(cep.length!==8){return;}
+  input.value=formatCep(cep); const btn=$("#cartPageQuoteButton"); const old=btn?.textContent||"Calcular"; if(btn){btn.disabled=true;btn.textContent="Calculando…";}
   try{
-    const data=buildLocalTestShippingQuotes(cep,cartForShipping());
-    shippingQuotes={melhor_envio:data.melhor_envio||[],uber:data.uber||null};
-    selectedShipping=null; renderCartPageShipping(); toast("Frete calculado com sucesso.");
-  }catch(e){toast("Não foi possível calcular o frete agora.");}
-  finally{btn.disabled=false;btn.textContent=old;}
+    let address="",district="",city="",uf="";
+    try{const r=await fetch(`https://viacep.com.br/ws/${cep}/json/`);const d=await r.json();if(!d.erro){address=d.logradouro||"";district=d.bairro||"";city=d.localidade||"";uf=d.uf||"";}}catch{}
+    const subtotal=cart.reduce((a,i)=>a+i.price*i.qty,0);
+    const r=await fetch("/api/shipping?action=quote",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cep,items:cartForShipping(),subtotal,address,district,city,uf})});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(data.message||"Falha ao calcular frete");
+    if(data.testMode)throw new Error("Modo de teste de frete está ativo no Netlify.");
+    shippingQuotes={melhor_envio:Array.isArray(data.melhor_envio)?data.melhor_envio:[],uber:data.uber||null};
+    selectedShipping=null; renderCartPageShipping();
+    if(!shippingQuotes.melhor_envio.length&&!shippingQuotes.uber) toast("Nenhuma opção de entrega disponível para este CEP."); else toast("Frete real calculado com sucesso.");
+  }catch(e){toast(e.message||"Não foi possível calcular o frete agora.");}
+  finally{if(btn){btn.disabled=false;btn.textContent=old;}}
 }
 
 function getAppliedCoupon(){return checkoutCoupon && !checkoutCoupon.used ? checkoutCoupon : null;}
@@ -1723,7 +1692,17 @@ async function lookupCep(){
     quoteShipping();
   }catch{toast("Não foi possível consultar o CEP.");}
 }
-function cartForShipping(){ return cart.map(i=>({id:String(i.id),name:i.name,quantity:i.qty,price:Number(i.price)||0,width:11,height:17,length:11,weight:.3})); }
+function cartForShipping(){
+  const num=(...vals)=>{for(const v of vals){const n=Number(v);if(Number.isFinite(n)&&n>0)return n;}return 0;};
+  return cart.map(i=>{
+    const p=products.find(x=>String(x.id)===String(i.groupId||i.id))||{}; const raw=p.raw||{}; const d=raw.dimensoes||raw.medidas||raw.dimensions||raw.peso||{};
+    return {id:String(i.id),name:i.name,quantity:i.qty,price:Number(i.price)||0,
+      width:num(i.width,p.width,raw.largura,raw.width,d.width)||11,
+      height:num(i.height,p.height,raw.altura,raw.height,d.height)||17,
+      length:num(i.length,p.length,raw.comprimento,raw.length,d.length)||11,
+      weight:num(i.weight,p.weight,raw.peso,d.weight)||.3};
+  });
+}
 function buildLocalTestShippingQuotes(cep,items=cartForShipping()){
   const qty=(items||[]).reduce((n,i)=>n+Math.max(1,Number(i.quantity)||1),0);
   const seed=Number(String(cep||"").slice(-3)||0);
@@ -1801,18 +1780,21 @@ async function quoteShipping(){
 function renderShippingQuotes(){
   const panel=$("#shippingQuotePanel"); if(!panel)return;
   const method=getSelectedDeliveryMethod();
-  if(isPickupMethod(method)){ const uberPickup=method==="pickup_uber"; panel.innerHTML=`<div class="shipping-pickup"><b>${uberPickup?"🛵 Retirada via Uber":"🏪 Retirada presencial"}</b><span>${uberPickup?"Aguarde a liberação do pedido. Depois da confirmação, solicite o Uber por sua conta para retirar.":"Sem frete. Após o pagamento aprovado, o pedido será preparado para retirada."}</span></div>`; return; }
-  const options=method==="uber"?(shippingQuotes.uber?[shippingQuotes.uber]:[]):shippingQuotes.melhor_envio;
-  if(!options?.length){ panel.innerHTML='<div class="shipping-empty"><b>Calcule o frete pelo CEP</b><span>As opções disponíveis aparecerão aqui.</span></div>'; return; }
-  panel.innerHTML=`<div class="shipping-provider-title">${method==="uber"?"🛵 Uber Moto":"📦 Melhor Envio"}</div><div class="shipping-options">${options.map((q,i)=>{
-    const provider=method; const key=`${provider}:${q.id||q.service||i}`; const checked=selectedShipping && selectedShipping.provider===provider && (selectedShipping.id||selectedShipping.service)===(q.id||q.service) ? "checked" : (!selectedShipping&&i===0?"checked":"");
-    return `<label class="shipping-option"><input type="radio" name="shippingService" value="${key}" data-provider="${provider}" data-index="${i}" ${checked}><span><b>${q.name||q.service||"Entrega"}</b><small>${q.company||""}${q.delivery_time?` • até ${q.delivery_time} dias úteis`:q.eta?` • ${q.eta}`:""}</small></span><strong>${money(q.price)}</strong></label>`;
-  }).join("")}</div>`;
+  if(isPickupMethod(method)){ const uberPickup=method==="pickup_uber"; panel.innerHTML=`<div class="shipping-pickup"><b>${uberPickup?"🛵 Retirada via Uber":"🏪 Retirada presencial"}</b><span>${uberPickup?"Aguarde a liberação do pedido. Depois da confirmação, solicite o Uber por sua conta.":"Sem frete. Após o pagamento aprovado, o pedido será preparado para retirada."}</span></div>`; return; }
+  const all=[];
+  (shippingQuotes.melhor_envio||[]).forEach((q,i)=>all.push({provider:"melhor_envio",icon:"📦",title:q.name||q.service||"Melhor Envio",sub:`${q.company||"Melhor Envio"}${q.delivery_time?` • até ${q.delivery_time} dias úteis`:""}`,q,i}));
+  if(shippingQuotes.uber) all.push({provider:"uber",icon:"🛵",title:"Uber Entregas",sub:`Uber Direct${shippingQuotes.uber.eta?` • ${shippingQuotes.uber.duration?`${shippingQuotes.uber.duration} min`:"entrega rápida"}`:""}`,q:shippingQuotes.uber,i:0});
+  if(!all.length){panel.innerHTML='<div class="shipping-empty"><b>Calcule o frete pelo CEP</b><span>As cotações reais do Melhor Envio e do Uber aparecerão aqui.</span></div>';return;}
+  panel.innerHTML=`<div class="shipping-provider-title">Opções de entrega</div><div class="shipping-options">${all.map((o,i)=>{const keyId=o.q.id||o.q.service||i; const checked=selectedShipping&&selectedShipping.provider===o.provider&&String(selectedShipping.id||selectedShipping.service)===String(keyId)?"checked":(!selectedShipping&&i===0?"checked":"");return `<label class="shipping-option"><input type="radio" name="shippingService" value="${o.provider}:${keyId}" data-provider="${o.provider}" data-index="${o.i}" ${checked}><span class="shipping-provider-mark">${o.icon}</span><span><b>${o.title}</b><small>${o.sub}</small></span><strong>${money(o.q.price)}</strong></label>`;}).join("")}</div>`;
   panel.querySelectorAll('input[name="shippingService"]').forEach(r=>r.addEventListener("change",()=>{
     const provider=r.dataset.provider; const idx=Number(r.dataset.index); const q=provider==="uber"?shippingQuotes.uber:shippingQuotes.melhor_envio[idx];
-    selectedShipping={provider,...q,label:q.name||q.service||"Entrega"}; updateCheckoutTotals();
+    selectedShipping={provider,...q,label:q.name||q.service||"Entrega"};
+    const radio=$(`input[name="delivery"][value="${provider}"]`); if(radio)radio.checked=true;
+    updateCheckoutTotals();
   }));
+  if(!selectedShipping){const first=all[0];selectedShipping={provider:first.provider,...first.q,label:first.title};const radio=$(`input[name="delivery"][value="${first.provider}"]`);if(radio)radio.checked=true;}
 }
+
 async function openCheckout(){
   // A forma de pagamento sempre começa sem pré-seleção a cada novo checkout.
   checkoutPayment=null;
@@ -2070,7 +2052,8 @@ function bindEvents(){
   }));
   $("#whatsappCta")?.setAttribute("href",whatsappLink()); const floatingWa=$("#floatingWhatsApp"); if(floatingWa) floatingWa.href=whatsappLink("Olá! Vim pelo site da Relpps Cosméticos e preciso de atendimento.");
   $$('input[name="delivery"]').forEach(r=>r.addEventListener("change",updateDeliveryUI));
-  $("#cep").addEventListener("input",e=>{e.target.value=formatCep(e.target.value)});
+  let cepQuoteTimer=null;
+  $("#cep").addEventListener("input",e=>{e.target.value=formatCep(e.target.value);const digits=e.target.value.replace(/\D/g,"");if(digits.length===8){clearTimeout(cepQuoteTimer);cepQuoteTimer=setTimeout(()=>lookupCep(),250);}});
   $("#cep").addEventListener("blur",lookupCep);
   $("#quoteShippingButton")?.addEventListener("click",quoteShipping);
   $("#checkoutWhatsAppButton")?.addEventListener("click",()=>window.open(whatsappLink("Olá! Preciso de ajuda para finalizar meu pedido na Relpps Cosméticos."),"_blank","noopener"));
@@ -2144,9 +2127,54 @@ function initImageLoading(){
 // Não reduzimos mais a foto pequena. A loja tenta automaticamente encontrar uma
 // variante original/sem thumbnail do mesmo endereço e escolhe a maior que carregar.
 // Assim, quando o Bling/CDN expõe a original por outra URL, ela substitui a miniatura.
-function imageUrlVariants(src){ return [String(src||'')].filter(Boolean); }
-function loadImageProbe(src,timeout=7000){ return Promise.resolve(null); }
-async function resolveBestProductImage(img){ return; }
+function imageUrlVariants(src){
+  const raw=String(src||'').trim();
+  if(!/^https?:\/\//i.test(raw)) return [raw];
+  const out=[]; const add=v=>{if(v&&!out.includes(v))out.push(v)};
+  add(raw);
+  try{
+    const u=new URL(raw);
+    const clean=new URL(raw);
+    ['w','h','width','height','resize','size','thumbnail','thumb','quality','q'].forEach(k=>clean.searchParams.delete(k));
+    add(clean.toString());
+    const path=u.pathname;
+    [
+      path.replace(/thumbnail/ig,'original'),
+      path.replace(/miniatura/ig,'original'),
+      path.replace(/preview/ig,'original'),
+      path.replace(/thumb/ig,'image'),
+      path.replace(/\/small\//ig,'/original/'),
+      path.replace(/\/resize\//ig,'/original/')
+    ].forEach(pathname=>{
+      if(pathname===path) return;
+      const v=new URL(clean.toString()); v.pathname=pathname; add(v.toString());
+    });
+  }catch{}
+  return out.slice(0,8);
+}
+function loadImageProbe(src,timeout=7000){
+  return new Promise(resolve=>{
+    const probe=new Image(); let done=false;
+    const finish=ok=>{if(done)return;done=true;resolve(ok?{src,w:probe.naturalWidth||0,h:probe.naturalHeight||0}:null)};
+    const t=setTimeout(()=>finish(false),timeout);
+    probe.onload=()=>{clearTimeout(t);finish(true)};
+    probe.onerror=()=>{clearTimeout(t);finish(false)};
+    probe.src=src;
+  });
+}
+async function resolveBestProductImage(img){
+  if(!img || img.dataset.relppsResolved==='1') return;
+  img.dataset.relppsResolved='1';
+  const current=img.currentSrc||img.src;
+  const variants=imageUrlVariants(current);
+  if(variants.length<2) return;
+  const results=await Promise.all(variants.map(v=>loadImageProbe(v)));
+  const best=results.filter(Boolean).sort((a,b)=>(b.w*b.h)-(a.w*a.h))[0];
+  if(best && best.src && (best.w*best.h)>(img.naturalWidth||0)*(img.naturalHeight||0)*1.15){
+    img.src=best.src;
+    img.dataset.relppsResolvedFrom='larger-source';
+  }
+}
 function applyPremiumImageSize(img){
   if(!img || !img.naturalWidth || !img.naturalHeight) return;
   const w=Number(img.naturalWidth), h=Number(img.naturalHeight);

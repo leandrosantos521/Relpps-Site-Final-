@@ -100,37 +100,13 @@ async function mapLimit(items, limit, worker){
   await Promise.all(Array.from({length:Math.max(1,Math.min(limit,items.length||1))},run));
   return out;
 }
-function collectImageValues(value,out=[],seen=new Set(),key="",imageContext=false){
-  if(value==null) return out;
-  const isImageKey=k=>/^(imagem|imagens|foto|fotos|anexo|anexos|midia|midias|media|images|image|thumbnail|miniatura|linkoriginal|linkminiatura|urlimagem|imagemurl|imagemprincipal)$/i.test(String(k||''));
-  const forbiddenKey=/^(linkexterno|urlproduto|urlprodutopagina|pagina|paginaweb|site|website)$/i.test(String(key||''));
-  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)
-    ||/(bling\.com\.br|blingcdn\.com|cdn|image|imagem|foto|media|midia|upload|thumb|thumbnail)/i.test(x)
-    ||/^(link|url|src|href)$/i.test(String(key||''));
-  if(typeof value==="string"){
-    const x=value.trim();
-    if(/^https?:\/\//i.test(x) && !forbiddenKey && (looksImage(x)||imageContext) && !seen.has(x)){
-      // Nunca trate o link da página do produto como se fosse a foto.
-      try{
-        const u=new URL(x), path=(u.pathname||'').toLowerCase();
-        const pageUrl=/\/(produto|produtos|product|products|catalogo|catalog|item|itens)(?:\/|$)/.test(path)
-          && !/\.(png|jpe?g|webp|gif|avif|svg)(?:$|[?#])/i.test(path)
-          && !/(imagem|image|foto|media|midia|cdn|upload|thumb|thumbnail)/i.test(path+u.search);
-        if(pageUrl) return out;
-      }catch{}
-      seen.add(x); out.push(x);
-    }
-    return out;
-  }
-  if(Array.isArray(value)){value.forEach(v=>collectImageValues(v,out,seen,key,imageContext));return out;}
-  if(typeof value==='object'){
-    for(const [k,v] of Object.entries(value)){
-      const next=imageContext || isImageKey(k) || /^(externas|internas|arquivos|arquivo)$/i.test(k)&&imageContext;
-      if(!/^(linkexterno|urlproduto|urlprodutopagina|pagina|paginaweb|site|website)$/i.test(k)){
-        if(isImageKey(k)||typeof v==='object'||looksImage(String(v||''))) collectImageValues(v,out,seen,k,next);
-      }
-    }
-  }
+function collectImageValues(value,out=[],seen=new Set(),key=""){
+  if(!value) return out;
+  const imageKey=/(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)/i;
+  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
+  if(typeof value==="string"){ const x=value.trim(); if(/^https?:\/\//i.test(x)&&(imageKey.test(String(key))||looksImage(x))&&!seen.has(x)){seen.add(x);out.push(x)} return out; }
+  if(Array.isArray(value)){value.forEach(v=>collectImageValues(v,out,seen,key));return out;}
+  if(typeof value==="object") for(const [k,v] of Object.entries(value)){if(imageKey.test(k)||typeof v==="object") collectImageValues(v,out,seen,k);}
   return out;
 }
 const imageMemoryCache = new Map();
