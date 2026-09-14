@@ -102,8 +102,8 @@ async function mapLimit(items, limit, worker){
 }
 function collectImageValues(value,out=[],seen=new Set(),key=""){
   if(!value) return out;
-  const imageKey=/^(imagem|imagens|imagemurl|imagemURL|imagemUrl|urlimagem|imagemprincipal|imagemPrincipal|foto|fotos|image|images|imageUrl|imageURL|urlImagem|arquivo|anexo|media|midia|linkMiniatura|linkOriginal|miniatura|thumbnail|srcImagem)$/i;
-  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/(bling\.com\.br|blingcdn\.com|cdn|image|imagem|foto|thumb|miniatura)/i.test(x);
+  const imageKey=/(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)/i;
+  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
   if(typeof value==="string"){ const x=value.trim(); if(/^https?:\/\//i.test(x)&&(imageKey.test(String(key))||looksImage(x))&&!seen.has(x)){seen.add(x);out.push(x)} return out; }
   if(Array.isArray(value)){value.forEach(v=>collectImageValues(v,out,seen,key));return out;}
   if(typeof value==="object") for(const [k,v] of Object.entries(value)){if(imageKey.test(k)||typeof v==="object") collectImageValues(v,out,seen,k);}
@@ -214,6 +214,7 @@ exports.handler = async (event) => {
       u.searchParams.set("response_type","code");
       u.searchParams.set("client_id",clientId);
       u.searchParams.set("state",state);
+      u.searchParams.set("redirect_uri",redirectUri());
       // O Bling usa a URL cadastrada no aplicativo quando redirect_uri não é enviado.
       // Isso evita falhas por diferença de barra final, protocolo ou domínio entre
       // o cadastro do app e a URL enviada no authorize.
@@ -221,9 +222,10 @@ exports.handler = async (event) => {
       return {statusCode:302,headers:{Location:u.toString(),"Cache-Control":"no-store"},body:""};
     }
 
-    if(action==="callback" && method==="POST") {
-      const payload=JSON.parse(event.body||"{}");
-      if(!payload.code || !payload.state) return json(400,{message:"code/state ausentes."});
+    if(action==="callback" && (method==="POST" || method==="GET")) {
+      const payload = method==="GET" ? (event.queryStringParameters||{}) : JSON.parse(event.body||"{}");
+      if(payload.error) return json(400,{message:payload.error_description||payload.error||"O Bling não autorizou a conexão."});
+      if(!payload.code || !payload.state) return json(400,{message:"code/state ausentes.",received:Object.keys(payload||{})});
       if(!verifyState(payload.state)) return json(400,{message:"State inválido ou expirado. Inicie a conexão novamente."});
       const data=await exchangeAuthorizationCode(payload.code);
       return json(200,{ok:true,connected:true,tokenType:data.token_type||"Bearer",expiresIn:data.expires_in||null});
@@ -240,7 +242,7 @@ exports.handler = async (event) => {
       return json(200,{ok:true,connected,oauthRedirect:redirectUri()});
     }
 
-    if(action==="image" || action==="image-proxy"){
+    if(action==="image"){
       const rawUrl=event.queryStringParameters?.url;
       if(!rawUrl) return json(400,{message:"Informe a URL da imagem."});
       try{

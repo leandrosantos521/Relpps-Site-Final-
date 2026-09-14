@@ -19,21 +19,26 @@
   const params=new URLSearchParams(location.search);
   const code=params.get('code');
   const state=params.get('state');
+  const hashParams=new URLSearchParams(location.hash.replace(/^#/,'?'));
+  const codeFromHash=hashParams.get('code');
+  const stateFromHash=hashParams.get('state');
   const error=params.get('error');
-  const errorDescription=params.get('error_description');
+  const errorDescription=params.get('error_description')||hashParams.get('error_description');
   const title=document.getElementById('title');
   const message=document.getElementById('message');
   const spinner=document.getElementById('spinner');
   if(error){
     spinner.style.display='none'; title.textContent='Conexão cancelada'; message.className='error'; message.textContent=errorDescription||'O Bling não autorizou a conexão.'; return;
   }
-  if(!code||!state){
+  const finalCode=code||codeFromHash;
+  const finalState=state||stateFromHash;
+  if(!finalCode||!finalState){
     spinner.style.display='none'; title.textContent='Não foi possível conectar'; message.className='error'; message.textContent='O Bling voltou para o callback sem code/state. Confira no aplicativo Bling se a URL de redirecionamento está EXATAMENTE como abaixo e tente novamente.';
     const pre=document.createElement('div'); pre.style='margin-top:16px;padding:14px;background:#f7f3ec;border:1px solid #e6ddd0;font-size:13px;line-height:1.5;word-break:break-all'; pre.textContent='https://relppscosmeticoss.netlify.app/bling-callback.html'; document.querySelector('.box').appendChild(pre);
     return;
   }
   try{
-    const r=await fetch('/api/bling?action=callback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,state})});
+    const r=await fetch('/api/bling?action=callback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:finalCode,state:finalState})});
     const data=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.message||'Falha ao concluir a autorização.');
     spinner.style.display='none'; title.textContent='Bling conectado'; message.className='ok'; message.textContent='A conexão foi concluída com sucesso. Você já pode voltar para a loja.';
