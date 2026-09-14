@@ -368,13 +368,13 @@ function productRawDetailRows(p){
 
 function blingImageUrls(p){
   const urls=[]; const seen=new Set();
-  const imageKey=/^(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)$/i;
-  const looksLikeImage=(x)=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
+  const imageKey=/^(imagem|imagens|imagemurl|imagemURL|imagemUrl|urlimagem|imagemprincipal|imagemPrincipal|foto|fotos|image|images|imageUrl|imageURL|urlImagem|arquivo|anexo|media|midia|linkMiniatura|linkOriginal|miniatura|thumbnail|srcImagem)$/i;
+  const looksLikeImage=(x)=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/(bling\.com\.br|blingcdn\.com|cdn|image|imagem|foto|thumb|miniatura)/i.test(x);
   const push=(v,key='')=>{
     if(!v)return;
     if(typeof v==='string'){
       const x=v.trim();
-      if((/^https?:\/\//i.test(x)||x.startsWith('./')||x.startsWith('/')) && (imageKey.test(String(key))||looksLikeImage(x)) && !seen.has(x)){
+      if((/^https?:\/\//i.test(x)||x.startsWith('./')||x.startsWith('/')) && looksLikeImage(x) && !seen.has(x)){
         seen.add(x); urls.push(x);
       }
       return;
@@ -387,7 +387,7 @@ function blingImageUrls(p){
     }
   };
   // Campos conhecidos do Bling + varredura profunda para diferenças entre respostas.
-  ['imagem','imagemUrl','urlImagem','imagemPrincipal','imagens','fotos','anexos','midias','media','images'].forEach(k=>push(p?.[k],k));
+  ['imagem','imagemUrl','imagemURL','imagemurl','urlImagem','imagemPrincipal','imagemprincipal','imageUrl','imageURL','imagens','fotos','anexos','midias','media','images'].forEach(k=>push(p?.[k],k));
   if(!urls.length) push(p,'root');
   return urls;
 }
@@ -395,8 +395,9 @@ function blingImageUrls(p){
 function blingImageProxy(url){
   const raw=String(url||"").trim();
   if(!/^https?:\/\//i.test(raw)) return raw;
+  const normalizedRaw=raw.replace(/^http:\/\//i,'https://');
   try{
-    const u=new URL(raw);
+    const u=new URL(normalizedRaw);
     const host=u.hostname.toLowerCase();
     const isBling=host==='bling.com.br'||host.endsWith('.bling.com.br')||host==='blingcdn.com'||host.endsWith('.blingcdn.com');
     // O navegador não acessa diretamente algumas imagens/CDNs do Bling. Para esses
@@ -717,6 +718,20 @@ async function hydratePageImages(pageList){
   }catch(e){ console.info("Imagens do Bling indisponíveis nesta página.",e); }
 }
 
+function bindProductImageFallback(img, original){
+  if(!img || img.dataset.relppsFallbackBound) return;
+  img.dataset.relppsFallbackBound="1";
+  img.dataset.relppsOriginal=original||img.src||"";
+  img.addEventListener("error",()=>{
+    const direct=String(img.dataset.relppsOriginal||"");
+    if(direct && img.dataset.relppsTriedDirect!=="1" && !direct.startsWith("data:")){
+      img.dataset.relppsTriedDirect="1";
+      try{ img.src=direct.replace(/^http:\/\//i,"https://"); return; }catch{}
+    }
+    img.src=safeImageFallback();
+  },{once:false});
+}
+
 function renderProducts(){
   const grid=$("#productGrid"), empty=$("#emptyState");
   const list=filteredProducts();
@@ -741,7 +756,7 @@ function renderProducts(){
     card.classList.add("reveal-item");
     card.innerHTML=`
       <button class="product-image product-detail-trigger" type="button" data-view="${p.id}" aria-label="Ver detalhes de ${p.name}">
-        <img src="${p.image}" alt="${p.name}" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=safeImageFallback()">
+        <img src="${p.image}" data-bling-image="${String(p.images?.[0]||p.image).replace(/"/g,'&quot;')}" alt="${p.name}" loading="eager" fetchpriority="high" decoding="async" referrerpolicy="no-referrer">
         <span class="stock-dot">${soldOut?"Esgotado":(Number(p.stock)<=5?"Últimas unidades":"Disponível")}</span>
       </button>
       <div class="product-info">
@@ -754,6 +769,8 @@ function renderProducts(){
         </div>
       </div>`;
     grid.appendChild(card);
+    const productImg=card.querySelector('img[data-bling-image]');
+    if(productImg) bindProductImageFallback(productImg, productImg.dataset.blingImage);
   });
   renderCatalogPagination(totalPages,list.length);
   requestAnimationFrame(()=>{
@@ -2108,28 +2125,7 @@ function initImageLoading(){
 // Assim, quando o Bling/CDN expõe a original por outra URL, ela substitui a miniatura.
 function imageUrlVariants(src){
   const raw=String(src||'').trim();
-  if(!/^https?:\/\//i.test(raw)) return [raw];
-  const out=[]; const add=v=>{if(v&&!out.includes(v))out.push(v)};
-  add(raw);
-  try{
-    const u=new URL(raw);
-    const clean=new URL(raw);
-    ['w','h','width','height','resize','size','thumbnail','thumb','quality','q'].forEach(k=>clean.searchParams.delete(k));
-    add(clean.toString());
-    const path=u.pathname;
-    [
-      path.replace(/thumbnail/ig,'original'),
-      path.replace(/miniatura/ig,'original'),
-      path.replace(/preview/ig,'original'),
-      path.replace(/thumb/ig,'image'),
-      path.replace(/\/small\//ig,'/original/'),
-      path.replace(/\/resize\//ig,'/original/')
-    ].forEach(pathname=>{
-      if(pathname===path) return;
-      const v=new URL(clean.toString()); v.pathname=pathname; add(v.toString());
-    });
-  }catch{}
-  return out.slice(0,8);
+  return raw ? [raw] : [];
 }
 function loadImageProbe(src,timeout=7000){
   return new Promise(resolve=>{
@@ -2141,19 +2137,7 @@ function loadImageProbe(src,timeout=7000){
     probe.src=src;
   });
 }
-async function resolveBestProductImage(img){
-  if(!img || img.dataset.relppsResolved==='1') return;
-  img.dataset.relppsResolved='1';
-  const current=img.currentSrc||img.src;
-  const variants=imageUrlVariants(current);
-  if(variants.length<2) return;
-  const results=await Promise.all(variants.map(v=>loadImageProbe(v)));
-  const best=results.filter(Boolean).sort((a,b)=>(b.w*b.h)-(a.w*a.h))[0];
-  if(best && best.src && (best.w*best.h)>(img.naturalWidth||0)*(img.naturalHeight||0)*1.15){
-    img.src=best.src;
-    img.dataset.relppsResolvedFrom='larger-source';
-  }
-}
+async function resolveBestProductImage(img){ return img; }
 function applyPremiumImageSize(img){
   if(!img || !img.naturalWidth || !img.naturalHeight) return;
   const w=Number(img.naturalWidth), h=Number(img.naturalHeight);

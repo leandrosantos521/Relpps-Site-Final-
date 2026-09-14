@@ -102,8 +102,8 @@ async function mapLimit(items, limit, worker){
 }
 function collectImageValues(value,out=[],seen=new Set(),key=""){
   if(!value) return out;
-  const imageKey=/(imagem|imagens|imagemurl|urlimagem|imagemprincipal|foto|fotos|image|images|url|link|href|src|arquivo|anexo|media|midia)/i;
-  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/bling\.com\.br|cdn|image|imagem|foto/i.test(x);
+  const imageKey=/^(imagem|imagens|imagemurl|imagemURL|imagemUrl|urlimagem|imagemprincipal|imagemPrincipal|foto|fotos|image|images|imageUrl|imageURL|urlImagem|arquivo|anexo|media|midia|linkMiniatura|linkOriginal|miniatura|thumbnail|srcImagem)$/i;
+  const looksImage=x=>/\.(png|jpe?g|webp|gif|avif|svg)(?:[?#].*)?$/i.test(x)||/(bling\.com\.br|blingcdn\.com|cdn|image|imagem|foto|thumb|miniatura)/i.test(x);
   if(typeof value==="string"){ const x=value.trim(); if(/^https?:\/\//i.test(x)&&(imageKey.test(String(key))||looksImage(x))&&!seen.has(x)){seen.add(x);out.push(x)} return out; }
   if(Array.isArray(value)){value.forEach(v=>collectImageValues(v,out,seen,key));return out;}
   if(typeof value==="object") for(const [k,v] of Object.entries(value)){if(imageKey.test(k)||typeof v==="object") collectImageValues(v,out,seen,k);}
@@ -240,7 +240,7 @@ exports.handler = async (event) => {
       return json(200,{ok:true,connected,oauthRedirect:redirectUri()});
     }
 
-    if(action==="image"){
+    if(action==="image" || action==="image-proxy"){
       const rawUrl=event.queryStringParameters?.url;
       if(!rawUrl) return json(400,{message:"Informe a URL da imagem."});
       try{
