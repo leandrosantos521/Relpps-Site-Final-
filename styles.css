@@ -1717,3 +1717,27 @@ body.mobile-nav-open{overflow:hidden}
 /* ===== ÚLTIMO AJUSTE — REMOVER TRAÇO ENTRE CABEÇALHO PRETO E MENU ===== */
 .site-header{border-bottom:0!important;box-shadow:none!important;}
 .nav-bar{border-top:0!important;}
+
+/* =========================================================
+   RELPPS FINAL — CABEÇALHO LIMPO + BANNERS SEM CORTE
+   ========================================================= */
+.site-header,
+.site-header *{--header-clean-line:transparent}
+.site-header{border-bottom:0!important;box-shadow:none!important}
+.header-main{border-bottom:0!important}
+.nav-bar{border-top:0!important;border-bottom:0!important;box-shadow:none!important}
+.nav-bar::before,.nav-bar::after{display:none!important;content:none!important}
+.trust-strip{display:none!important}
+.search-box{border:1px solid rgba(181,138,67,.65)!important;border-radius:999px!important;background:#111!important;overflow:hidden!important;box-shadow:0 8px 24px rgba(0,0,0,.16)!important}
+.search-box input{color:#fff!important}
+.search-box input::placeholder{color:rgba(255,255,255,.72)!important}
+.search-box button{border-radius:50%!important}
+.hero-slider{height:auto!important;aspect-ratio:16/9;max-height:none!important;background:#fff!important;box-shadow:none!important;overflow:hidden!important}
+.hero-slides{height:100%!important}
+.hero-slide{height:100%!important;background:#fff!important}
+.hero-slide::after{background:linear-gradient(90deg,rgba(0,0,0,.035),transparent 18%,transparent 82%,rgba(0,0,0,.035))!important}
+.hero-slide img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;transform:scale(1)!important;transition:transform 7.5s cubic-bezier(.22,.61,.36,1)!important}
+.hero-slide.active img{transform:scale(1.012)!important}
+.hero-slider:after{display:none!important}
+@media(max-width:900px){.hero-slider{height:auto!important;aspect-ratio:16/9!important;min-height:0!important}.hero-slide img{object-fit:contain!important}}
+@media(max-width:600px){.hero-slider{aspect-ratio:16/9!important}.hero-slide img{object-fit:contain!important}}

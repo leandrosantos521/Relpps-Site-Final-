@@ -1543,8 +1543,8 @@ function renderCartPageShipping(){
   if(cartPageReceiveMode==="pickup"){ updateCartPageTotals(); return; }
   const qs=shippingQuotes.melhor_envio||[];
   const opts=qs.map(q=>({provider:"melhor_envio",icon:"📦",title:`${q.company||"Melhor Envio"} — ${q.name||q.service||"Entrega"}`,sub:q.delivery_time?`${q.delivery_time} dias úteis`:"prazo não informado",q}));
-  opts.push({provider:"uber",icon:"🛵",title:"Uber Entregas",sub:"A calcular — valor informado depois do pedido",q:{price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true}});
-  if(!opts.length){box.innerHTML='<div class="cart-page-shipping-empty"><b>Informe seu CEP</b><br>O Melhor Envio será consultado em tempo real.</div><label class="cart-page-shipping-option uber-option"><input type="radio" name="cartPageShippingService" data-provider="uber" data-index="0"><span class="shipping-provider-mark">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado depois do pedido</small></span><strong>A calcular</strong></label>';box.querySelector('input[data-provider="uber"]')?.addEventListener('change',()=>{selectedShipping={provider:'uber',price:0,service:'uber_manual',id:'uber_manual',label:'Uber Entregas — A calcular',manual:true};updateCartPageTotals();});updateCartPageTotals();return;}
+  opts.push({provider:"uber",icon:"🛵",title:"Uber / 99",sub:"A calcular — valor informado depois do pedido",q:{price:0,service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",manual:true}});
+  if(!opts.length){box.innerHTML='<div class="cart-page-shipping-empty"><b>Informe seu CEP</b><br>O Melhor Envio será consultado em tempo real.</div><label class="cart-page-shipping-option uber-option"><input type="radio" name="cartPageShippingService" data-provider="uber" data-index="0"><span class="shipping-provider-mark">🛵</span><span><b>Uber / 99</b><small>A calcular — o valor será informado depois do pedido</small></span><strong>A calcular</strong></label>';box.querySelector('input[data-provider="uber"]')?.addEventListener('change',()=>{selectedShipping={provider:'uber',price:0,service:'uber_manual',id:'uber_manual',label:'Uber / 99 — A calcular',manual:true};updateCartPageTotals();});updateCartPageTotals();return;}
   box.innerHTML=opts.map((o,i)=>{const isUber=o.provider==="uber";const checked=selectedShipping&&selectedShipping.provider===o.provider&&String(selectedShipping.id||selectedShipping.service)===String(o.q.id||o.q.service)?"checked":(!selectedShipping&&i===0?"checked":"");return `<label class="cart-page-shipping-option ${isUber?"uber-option":""}"><input type="radio" name="cartPageShippingService" data-provider="${o.provider}" data-index="${i}" ${checked}><span class="shipping-provider-mark">${o.icon}</span><span><b>${o.title}</b><small>${o.sub}</small></span><strong>${isUber?"A calcular":money(o.q.price)}</strong></label>`}).join("");
   box.querySelectorAll('input[name="cartPageShippingService"]').forEach(r=>r.addEventListener("change",()=>{
     const o=opts[Number(r.dataset.index)]; selectedShipping={provider:o.provider,...o.q,label:o.q.label||o.title,manual:o.provider==="uber"}; updateCartPageTotals();
@@ -1638,7 +1638,7 @@ function updateDeliveryUI(){
     const q=shippingQuotes.melhor_envio?.[0];
     selectedShipping=q?{provider:"melhor_envio",...q,label:q.name||q.service||"Melhor Envio"}:{provider:"melhor_envio",price:0,service:"melhor_envio_pending",label:"Melhor Envio — informe o CEP",manual:true};
   }else{
-    selectedShipping={provider:"uber",service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",price:0,manual:true};
+    selectedShipping={provider:"uber",service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",price:0,manual:true};
   }
   renderShippingQuotes();
   renderPaymentOptions(method);
@@ -1649,7 +1649,7 @@ function renderPaymentOptions(method){
   const note=$("#paymentNote");
   if(method==="uber") {
     checkoutPayment=null;
-    box.innerHTML='<div class="payment-detail-head"><div><b>Pagamento após a cotação</b><small>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido.</small></div><span>🛵 UBER</span></div><div class="payment-detail-body"><div class="checkout-uber-highlight"><strong>Pagamento liberado após o frete</strong><p>Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</p></div></div>';
+    box.innerHTML='<div class="payment-detail-head"><div><b>Pagamento após a cotação</b><small>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido.</small></div><span>🛵 UBER / 99</span></div><div class="payment-detail-body"><div class="checkout-uber-highlight"><strong>Pagamento liberado após o frete</strong><p>Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</p></div></div>';
     if(note) note.textContent="Após o pedido ser criado, a Relpps informa o valor da entrega. Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.";
     return;
   }
@@ -1704,7 +1704,7 @@ function applyShippingQuoteData(data){
     const q=shippingQuotes.melhor_envio[0];
     selectedShipping={provider:"melhor_envio",...q,label:q.name||q.service||"Melhor Envio"};
   }else if(method==="uber"){
-    selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true};
+    selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",manual:true};
   }
   renderShippingQuotes();
   updateCheckoutTotals();
@@ -1741,8 +1741,8 @@ function renderShippingQuotes(){
   const method=getSelectedDeliveryMethod();
   if(isPickupMethod(method)){ const uberPickup=method==="pickup_uber"; panel.innerHTML=`<div class="shipping-pickup"><b>${uberPickup?"🛵 Retirada via Uber / 99":"🏪 Retirada presencial"}</b><span>${uberPickup?"Sem CEP e sem frete. Após o pagamento e a liberação da loja, abra Uber ou 99 por sua conta.":"Sem frete. Pix ou Cartão reservam o pedido; Dinheiro é pago somente na loja."}</span></div>`; return; }
   if(method==="uber"){
-    selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true};
-    panel.innerHTML=`<div class="shipping-provider-title">Uber Entregas</div><div class="shipping-options"><label class="shipping-option"><input type="radio" checked disabled><span class="shipping-provider-mark">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado pela Relpps no pedido.</small></span><strong>A calcular</strong></label></div><div class="uber-checkout-notice"><b>Como funciona</b><span>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido. Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</span></div>`;
+    selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",manual:true};
+    panel.innerHTML=`<div class="shipping-provider-title">Uber Entregas</div><div class="shipping-options"><label class="shipping-option"><input type="radio" checked disabled><span class="shipping-provider-mark">🛵</span><span><b>Uber / 99</b><small>A calcular — o valor será informado pela Relpps no pedido.</small></span><strong>A calcular</strong></label></div><div class="uber-checkout-notice"><b>Como funciona</b><span>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido. Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</span></div>`;
     return;
   }
   const qs=shippingQuotes.melhor_envio||[];
@@ -1813,7 +1813,7 @@ async function submitOrder(form){
   checkoutPayment=data.payment;
   if(!isPickupMethod(method) && (!data.cep||!data.address||!data.number||!data.city)){toast("Preencha o endereço de entrega.");return;}
   if(!isPickupMethod(method) && method==="melhor_envio" && (!selectedShipping || selectedShipping.provider!=="melhor_envio" || Number(selectedShipping.price||0)<=0 || !selectedShipping.quote_token)){toast("Calcule e escolha uma opção do Melhor Envio antes de pagar.");return;}
-  if(method==="uber") selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true};
+  if(method==="uber") selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",manual:true};
   const totalsFinal=updateCheckoutTotals();
   const payload={
     status:"Aguardando pagamento",customer:{name:data.name,cpf:data.cpf,email:data.email,phone:data.phone},
@@ -2279,7 +2279,7 @@ function validateCheckoutReceiveStage(){
   if(isPickupMethod(method)) return true;
   if(!checkoutRequiredFields(["cep","address","number","district","city"])) return false;
   if(method==="melhor_envio" && (!selectedShipping || selectedShipping.provider!=="melhor_envio" || Number(selectedShipping.price||0)<=0 || !selectedShipping.quote_token)){ toast("Calcule e selecione uma opção do Melhor Envio antes de continuar."); return false; }
-  if(method==="uber") selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true};
+  if(method==="uber") selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber / 99 — A calcular",manual:true};
   return true;
 }
 
