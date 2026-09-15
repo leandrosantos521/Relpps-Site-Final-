@@ -122,7 +122,8 @@
   <main id="inicio">
     <section class="hero-slider" aria-label="Destaques Relpps">
       <div class="hero-slides">
-        <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-novidade.jpg" alt="Novidades Relpps Cosméticos" fetchpriority="high"></a>
+        <a class="hero-slide" href="#produtos"><img src="assets/banner-dia-do-cliente.jpg" alt="Dia do Cliente — Beleza que eleva seu trabalho" fetchpriority="high"></a>
+        <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-novidade.jpg" alt="Novidades Relpps Cosméticos" loading="lazy"></a>
         <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-colecao.jpg" alt="Coleção Relpps Cosméticos" loading="lazy"></a>
         <a class="hero-slide" href="#produtos"><img src="assets/banner-relpps-ofertas.jpg" alt="Ofertas especiais Relpps Cosméticos" loading="lazy"></a>
       </div>
@@ -132,6 +133,7 @@
         <button class="hero-dot active" type="button" aria-label="Banner 1"></button>
         <button class="hero-dot" type="button" aria-label="Banner 2"></button>
         <button class="hero-dot" type="button" aria-label="Banner 3"></button>
+        <button class="hero-dot" type="button" aria-label="Banner 4"></button>
       </div>
     </section>
 
@@ -320,10 +322,10 @@
         <figure class="store-gallery-card"><img src="./assets/relpps-store-03.jpg" alt="Corredor interno da loja Relpps" loading="lazy"><figcaption>Seu espaço de beleza</figcaption></figure>
         <figure class="store-gallery-card"><img src="./assets/relpps-store-04.jpg" alt="Balcão e produtos da Relpps" loading="lazy"><figcaption>Detalhes que inspiram</figcaption></figure>
       </div>
-      <div class="relpps-location-card" aria-label="Localização da Relpps Cosméticos">
-        <div class="relpps-location-icon" aria-hidden="true">⌖</div>
-        <div class="relpps-location-copy"><span class="eyebrow">VISITE A RELPPS</span><h3>Relpps Cosméticos</h3><p>Quadra C 12, Área Especial 02, Loja 30<br>Taguatinga Centro, Brasília - DF · CEP 72010-901</p><small>Venha nos visitar e encontre de perto tudo para sua rotina de beleza profissional.</small></div>
-        <a class="relpps-location-map" href="https://www.google.com/maps/search/?api=1&amp;query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener">ABRIR NO GOOGLE MAPS <span>↗</span></a>
+      <div class="relpps-location-card relpps-location-card-premium" aria-label="Localização da Relpps Cosméticos">
+        <div class="relpps-location-photo"><img src="./assets/relpps-store-front.jpg" alt="Fachada da loja Relpps Cosméticos em Taguatinga Centro" loading="lazy"><span>RELPPS COSMÉTICOS</span></div>
+        <div class="relpps-location-copy"><span class="eyebrow">VISITE A RELPPS</span><h3>Venha conhecer nossa loja.</h3><p>Quadra C 12, Área Especial 02, Loja 30<br>Taguatinga Centro, Brasília - DF · CEP 72010-901</p><small>Atendimento e retirada presencial em um espaço completo para unhas, cílios e sobrancelhas.</small></div>
+        <a class="relpps-location-map" href="https://www.google.com/maps/search/?api=1&amp;query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener">ABRIR LOCALIZAÇÃO <span>↗</span></a>
       </div>
     </div>
   </section>
@@ -473,11 +475,11 @@
         </section>
         <aside class="cart-page-summary-card">
           <h2>Frete</h2>
-          <p class="cart-page-helper">Digite seu CEP para ver somente as duas opções disponíveis.</p>
+          <p class="cart-page-helper">Digite seu CEP para calcular o <b>Melhor Envio</b>. Uber Entregas permanece <b>A calcular</b>.</p>
           <div class="cart-page-cep"><input id="cartPageCep" inputmode="numeric" maxlength="9" placeholder="Digite seu CEP"><button id="cartPageQuoteButton" type="button">Calcular</button></div>
-          <label class="cart-page-pickup-choice" id="cartPagePickupChoice"><input type="radio" name="cartPageReceiveMode" value="pickup"><span class="pickup-choice-icon">🏪</span><span><b>Retirada</b><small>Escolha no checkout entre retirada presencial ou Uber por conta do cliente.</small></span></label>
-          <label class="cart-page-delivery-choice"><input type="radio" name="cartPageReceiveMode" value="delivery" checked><span class="pickup-choice-icon">🚚</span><span><b>Entrega</b><small>Calcule o CEP e escolha Uber Entregas ou Correios.</small></span></label>
-          <div id="cartPageShippingOptions" class="cart-page-shipping"><div class="cart-page-shipping-empty">Informe seu CEP para calcular Uber Entregas e Correios.</div></div>
+          <label class="cart-page-pickup-choice" id="cartPagePickupChoice"><input type="radio" name="cartPageReceiveMode" value="pickup"><span class="pickup-choice-icon">🏪</span><span><b>Retirada</b><small>Presencial reservada ou Retirada via Uber / 99 por conta do cliente.</small></span></label>
+          <label class="cart-page-delivery-choice"><input type="radio" name="cartPageReceiveMode" value="delivery" checked><span class="pickup-choice-icon">🚚</span><span><b>Entrega</b><small>Melhor Envio calcula no checkout; Uber fica A calcular.</small></span></label>
+          <div id="cartPageShippingOptions" class="cart-page-shipping"><div class="cart-page-shipping-empty">Informe seu CEP para registrar a localização do pedido.</div></div>
           <div class="cart-page-total-box">
             <div><span>Subtotal</span><b id="cartPageSubtotal">R$ 0,00</b></div>
             <div><span>Frete</span><b id="cartPageShipping">—</b></div>
@@ -520,12 +522,12 @@
                 <div class="section-heading-row"><div><h3>2. Como você quer receber?</h3><p class="micro-note">Escolha a forma de recebimento. Para entrega, informe o CEP logo abaixo.</p></div><span class="checkout-step-badge">02</span></div>
                 <div class="fulfillment-flow">
                   <div class="fulfillment-group"><div class="fulfillment-title"><span>🚚</span><div><b>Entrega</b><small>Receba no endereço informado</small></div></div><div class="delivery-options nested">
-                    <label class="delivery-option"><input type="radio" name="delivery" value="melhor_envio" checked><span class="delivery-icon">📦</span><span><b>Melhor Envio</b><small>Correios e transportadoras disponíveis</small></span></label>
-                    <label class="delivery-option"><input type="radio" name="delivery" value="uber"><span class="delivery-icon">🛵</span><span><b>Uber Entregas</b><small>Cotação em tempo real quando disponível</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="melhor_envio" checked><span class="delivery-icon">📦</span><span><b>Melhor Envio</b><small>Cotação em tempo real no checkout</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="uber"><span class="delivery-icon">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado depois no pedido</small></span></label>
                   </div></div>
                   <div class="fulfillment-group"><div class="fulfillment-title"><span>🏪</span><div><b>Retirada</b><small>Escolha a forma de retirada</small></div></div><div class="delivery-options nested">
                     <label class="delivery-option"><input type="radio" name="delivery" value="pickup"><span class="delivery-icon">🤝</span><span><b>Retirada presencial</b><small>Retire após a confirmação</small></span></label>
-                    <label class="delivery-option"><input type="radio" name="delivery" value="pickup_uber"><span class="delivery-icon">🛵</span><span><b>Retirada via Uber</b><small>Uber por conta do cliente</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="pickup_uber"><span class="delivery-icon">🛵</span><span><b>Retirada via Uber / 99</b><small>Transporte por conta do cliente, sem CEP</small></span></label>
                   </div></div>
                 </div>
                 <p class="uber-pickup-note">Para retirada via Uber, aguarde a liberação do pedido. Depois da confirmação, solicite o Uber por sua conta.</p>
@@ -533,17 +535,17 @@
               </div>
 
               <div class="form-section checkout-step-card checkout-address-step" id="addressFields">
-                <div class="section-heading-row"><div><h3>CEP e endereço</h3><p class="micro-note">Informe o endereço para calcular e escolher sua entrega.</p></div><span class="checkout-step-badge">CEP</span></div>
+                <div class="section-heading-row"><div><h3>CEP e endereço</h3><p class="micro-note">Para entrega, informe o CEP. O Melhor Envio é cotado agora; Uber Entregas fica “A calcular”.</p></div><span class="checkout-step-badge">CEP</span></div>
                 <div class="form-grid">
-                  <label>CEP<div class="input-with-action"><input name="cep" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"><button type="button" id="quoteShippingButton">Calcular frete</button></div></label>
+                  <label>CEP<div class="input-with-action"><input name="cep" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"><button type="button" id="quoteShippingButton">CALCULAR FRETE</button></div></label>
                   <label>Endereço<input name="address" id="address"></label>
                   <label>Número<input name="number" id="number"></label>
                   <label>Complemento<input name="complement" id="complement"></label>
                   <label>Bairro<input name="district" id="district"></label>
                   <label>Cidade / UF<input name="city" id="city"></label>
                 </div>
-                <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Calcule o frete pelo CEP</b><span>Somente Uber Entregas e Correios aparecerão aqui.</span></div></div>
-                <p class="micro-note" id="shippingStatusNote">As cotações reais dependem das credenciais de produção configuradas no Netlify.</p>
+                <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Informe o CEP</b><span>O Melhor Envio calcula o frete em tempo real. Uber Entregas fica “A calcular”.</span></div></div>
+                <p class="micro-note" id="shippingStatusNote">O Melhor Envio será cotado agora e incluído no pagamento. Para Uber Entregas, o pedido é criado primeiro e o frete será lançado depois no pedido.</p>
               </div>
               <div class="checkout-stage-actions"><button class="checkout-stage-back" id="checkoutBackToData" type="button">← Voltar para dados</button><button class="btn btn-gold checkout-stage-next" id="checkoutToPayment" type="button">CONTINUAR PARA PAGAMENTO →</button></div>
             </section>

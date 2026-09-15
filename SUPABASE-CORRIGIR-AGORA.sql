@@ -38,3 +38,17 @@ create table if not exists public.relpps_bling_oauth (
   updated_at timestamptz not null default now()
 );
 alter table public.relpps_bling_oauth enable row level security;
+
+
+-- OAuth Melhor Envio (produção)
+create table if not exists public.relpps_melhor_envio_oauth (
+  id integer primary key,
+  access_token text not null,
+  refresh_token text not null,
+  token_type text default 'Bearer',
+  expires_at timestamptz,
+  refresh_expires_at timestamptz,
+  scope text,
+  updated_at timestamptz default now()
+);
+alter table public.relpps_melhor_envio_oauth enable row level security;

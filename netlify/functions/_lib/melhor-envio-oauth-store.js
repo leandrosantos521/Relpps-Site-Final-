@@ -1,0 +1,4 @@
+const {supabase}=require('./store');
+async function getOAuth(){const rows=await supabase('relpps_melhor_envio_oauth?select=*&id=eq.1&limit=1');return rows?.[0]||null;}
+async function saveOAuth(data){const row={id:1,access_token:String(data.access_token||''),refresh_token:String(data.refresh_token||''),token_type:String(data.token_type||'Bearer'),expires_at:new Date(Date.now()+Number(data.expires_in||2592000)*1000).toISOString(),refresh_expires_at:new Date(Date.now()+45*24*60*60*1000).toISOString(),scope:String(data.scope||'shipping-calculate ecommerce-shipping'),updated_at:new Date().toISOString()};const rows=await supabase('relpps_melhor_envio_oauth',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)});return rows?.[0]||row;}
+module.exports={getOAuth,saveOAuth};

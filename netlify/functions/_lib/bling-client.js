@@ -124,7 +124,7 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
 
   // O frontend já calcula as regras comerciais. Aqui apenas aplicamos os mesmos descontos
   // sobre preços confirmados no Bling, evitando que o navegador altere o preço final.
-  const paymentKind=payment==='pix_online'?'pix':payment==='card'?'card':'cash';
+  const paymentKind=payment==='pix_online'?'pix':payment==='card'?'card':payment==='pending'?'pending':'cash';
   const baseSubtotal=authoritative.reduce((s,x)=>s+x.unitPrice*Math.max(1,Number(x.item.quantity)||1),0);
   let automaticDiscount=0;
   const automaticItems=[];
@@ -143,7 +143,7 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
   }
   const shipping=delivery?.shipping?.price ? Number(delivery.shipping.price) : 0;
   const total=Math.max(0,baseSubtotal-automaticDiscount-couponDiscount+shipping);
-  const paymentFormId=await findPaymentForm(paymentKind);
+  const paymentFormId=paymentKind==='pending'?null:await findPaymentForm(paymentKind);
   const pendingSituation=situationId('pending');
 
   const saleItems=authoritative.map(x=>{
@@ -171,8 +171,8 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
     totalProdutos:Number(baseSubtotal.toFixed(2)),
     total:Number(total.toFixed(2)),
     desconto:{valor:Number((automaticDiscount+couponDiscount).toFixed(2)),unidade:'REAL'},
-    observacoes:`Pedido online Relpps ${orderId} | ${paymentKind==='cash'?'DINHEIRO NA RETIRADA':paymentKind==='pix'?'PIX ONLINE':'CARTÃO ONLINE'} | Status: Aguardando pagamento`,
-    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: R$ ${shipping.toFixed(2)} | Gateway: ${paymentKind==='cash'?'não utilizado':'InfinitePay'} | RELPPS_META:${JSON.stringify({method:relppsMeta.method||delivery?.method||'delivery',payment:relppsMeta.payment||payment,fulfillmentStatus:relppsMeta.fulfillmentStatus||'Aguardando pagamento'})}`,
+    observacoes:`Pedido online Relpps ${orderId} | ${paymentKind==='pending'?'PAGAMENTO APÓS COTAÇÃO':paymentKind==='cash'?'DINHEIRO NA RETIRADA':paymentKind==='pix'?'PIX ONLINE':'CARTÃO ONLINE'} | Status: Aguardando pagamento | Frete: ${delivery?.method==='uber'?'A CALCULAR — UBER ENTREGAS':'A CALCULAR NO MELHOR ENVIO'}`,
+    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: ${shipping>0?`R$ ${shipping.toFixed(2)}`:(delivery?.method==='uber'?"A CALCULAR — UBER ENTREGAS":"A CALCULAR NO MELHOR ENVIO")} | Gateway: ${paymentKind==='cash'?'não utilizado':paymentKind==='pending'?'aguardando cotação':'InfinitePay'} | RELPPS_META:${JSON.stringify({method:relppsMeta.method||delivery?.method||'delivery',payment:relppsMeta.payment||payment,fulfillmentStatus:relppsMeta.fulfillmentStatus||'Aguardando pagamento'})}`,
     transporte:{
       fretePorConta:1,
       frete:Number(shipping.toFixed(2)),
@@ -203,4 +203,17 @@ async function getSaleOrder(id){
   return data?.data || data || null;
 }
 
-module.exports={blingFetch,getProduct,productPrice,productStock,createSaleOrder,setOrderSituation,situationId,cleanDoc,findSaleOrderByStoreNumber,getSaleOrder};
+async function updateSaleOrderFreight(orderId,{price,total,provider,label,service,paid=false}={}){
+  const current=await getSaleOrder(orderId);
+  if(!current?.id) throw new Error('Pedido de venda não encontrado no Bling.');
+  const freight=Number(Number(price||0).toFixed(2));
+  const next={...current,
+    total:Number(Number(total??current.total??0).toFixed(2)),
+    transporte:{...(current.transporte||{}),fretePorConta:1,frete:freight},
+    observacoes:`${String(current.observacoes||'').replace(/\s*\|\s*Frete:[^|\n]*/i,'')} | Frete: ${label||provider||'Entrega'}${service?` (${service})`:''} R$ ${freight.toFixed(2)} | ${paid?'Frete pago':'Aguardando pagamento do frete'}`,
+    observacoesInternas:`${String(current.observacoesInternas||'').replace(/\s*\|\s*Frete:[^|\n]*/i,'').replace(/RELPPS_FREIGHT_META:\{[^\n]*\}/,'').trim()} | Frete: ${label||provider||'Entrega'} R$ ${freight.toFixed(2)} | ${paid?'PAGO':'AGUARDANDO PAGAMENTO'} | RELPPS_FREIGHT_META:${JSON.stringify({provider,label,service,price:freight,paid:Boolean(paid),payment:current?.observacoesInternas?.match(/RELPPS_FREIGHT_PAYMENT:(\{[^\n]*\})/)?.[1]||null})}`
+  };
+  return await blingFetch(`/pedidos/vendas/${encodeURIComponent(orderId)}`,{method:'PUT',body:JSON.stringify(next)});
+}
+
+module.exports={blingFetch,getProduct,productPrice,productStock,createSaleOrder,setOrderSituation,situationId,cleanDoc,findSaleOrderByStoreNumber,getSaleOrder,updateSaleOrderFreight};
