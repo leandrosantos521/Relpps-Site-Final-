@@ -1544,8 +1544,8 @@ function renderCartPageShipping(){
   const qs=shippingQuotes.melhor_envio||[];
   const opts=qs.map(q=>({provider:"melhor_envio",icon:"📦",title:`${q.company||"Melhor Envio"} — ${q.name||q.service||"Entrega"}`,sub:q.delivery_time?`${q.delivery_time} dias úteis`:"prazo não informado",q}));
   opts.push({provider:"uber",icon:"🛵",title:"Uber Entregas",sub:"A calcular — valor informado depois do pedido",q:{price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true}});
-  if(!opts.length){box.innerHTML='<div class="cart-page-shipping-empty"><b>Informe seu CEP</b><br>O Melhor Envio será consultado em tempo real.</div>';updateCartPageTotals();return;}
-  box.innerHTML=opts.map((o,i)=>{const isUber=o.provider==="uber";const checked=selectedShipping&&selectedShipping.provider===o.provider&&String(selectedShipping.id||selectedShipping.service)===String(o.q.id||o.q.service)?"checked":(!selectedShipping&&i===0?"checked":"");return `<label class="cart-page-shipping-option"><input type="radio" name="cartPageShippingService" data-provider="${o.provider}" data-index="${i}" ${checked}><span class="shipping-provider-mark">${o.icon}</span><span><b>${o.title}</b><small>${o.sub}</small></span><strong>${isUber?"A calcular":money(o.q.price)}</strong></label>`}).join("");
+  if(!opts.length){box.innerHTML='<div class="cart-page-shipping-empty"><b>Informe seu CEP</b><br>O Melhor Envio será consultado em tempo real.</div><label class="cart-page-shipping-option uber-option"><input type="radio" name="cartPageShippingService" data-provider="uber" data-index="0"><span class="shipping-provider-mark">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado depois do pedido</small></span><strong>A calcular</strong></label>';box.querySelector('input[data-provider="uber"]')?.addEventListener('change',()=>{selectedShipping={provider:'uber',price:0,service:'uber_manual',id:'uber_manual',label:'Uber Entregas — A calcular',manual:true};updateCartPageTotals();});updateCartPageTotals();return;}
+  box.innerHTML=opts.map((o,i)=>{const isUber=o.provider==="uber";const checked=selectedShipping&&selectedShipping.provider===o.provider&&String(selectedShipping.id||selectedShipping.service)===String(o.q.id||o.q.service)?"checked":(!selectedShipping&&i===0?"checked":"");return `<label class="cart-page-shipping-option ${isUber?"uber-option":""}"><input type="radio" name="cartPageShippingService" data-provider="${o.provider}" data-index="${i}" ${checked}><span class="shipping-provider-mark">${o.icon}</span><span><b>${o.title}</b><small>${o.sub}</small></span><strong>${isUber?"A calcular":money(o.q.price)}</strong></label>`}).join("");
   box.querySelectorAll('input[name="cartPageShippingService"]').forEach(r=>r.addEventListener("change",()=>{
     const o=opts[Number(r.dataset.index)]; selectedShipping={provider:o.provider,...o.q,label:o.q.label||o.title,manual:o.provider==="uber"}; updateCartPageTotals();
   }));
@@ -1649,8 +1649,8 @@ function renderPaymentOptions(method){
   const note=$("#paymentNote");
   if(method==="uber") {
     checkoutPayment=null;
-    box.innerHTML='<div class="payment-detail-head"><div><b>Pagamento após a cotação</b><small>Você não paga agora. Primeiro criamos o pedido e a Relpps informa o frete.</small></div><span>🛵 UBER</span></div><div class="payment-detail-body"><div class="cash-visual"><b>O pagamento será liberado quando o frete for lançado no pedido.</b><p>Depois que a Relpps colocar o valor da entrega no Bling, esta página mostrará o valor total e o botão para pagar por Pix ou Cartão.</p></div></div>';
-    if(note) note.textContent="Para Uber Entregas, o pagamento fica disponível somente após a cotação do frete.";
+    box.innerHTML='<div class="payment-detail-head"><div><b>Pagamento após a cotação</b><small>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido.</small></div><span>🛵 UBER</span></div><div class="payment-detail-body"><div class="checkout-uber-highlight"><strong>Pagamento liberado após o frete</strong><p>Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</p></div></div>';
+    if(note) note.textContent="Após o pedido ser criado, a Relpps informa o valor da entrega. Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.";
     return;
   }
   let current=checkoutPayment || $("input[name=payment]:checked")?.value || null;
@@ -1742,7 +1742,7 @@ function renderShippingQuotes(){
   if(isPickupMethod(method)){ const uberPickup=method==="pickup_uber"; panel.innerHTML=`<div class="shipping-pickup"><b>${uberPickup?"🛵 Retirada via Uber / 99":"🏪 Retirada presencial"}</b><span>${uberPickup?"Sem CEP e sem frete. Após o pagamento e a liberação da loja, abra Uber ou 99 por sua conta.":"Sem frete. Pix ou Cartão reservam o pedido; Dinheiro é pago somente na loja."}</span></div>`; return; }
   if(method==="uber"){
     selectedShipping={provider:"uber",price:0,service:"uber_manual",id:"uber_manual",label:"Uber Entregas — A calcular",manual:true};
-    panel.innerHTML=`<div class="shipping-provider-title">Uber Entregas</div><div class="shipping-options"><label class="shipping-option"><input type="radio" checked disabled><span class="shipping-provider-mark">🛵</span><span><b>Uber Entregas</b><small>Frete será calculado pela Relpps e informado no site antes do pagamento.</small></span><strong>A calcular</strong></label></div><div class="shipping-empty" style="margin-top:10px"><b>Você não paga agora.</b><span>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido. Quando o frete for lançado no Bling, o botão de pagamento aparecerá nesta página com o valor total.</span></div>`;
+    panel.innerHTML=`<div class="shipping-provider-title">Uber Entregas</div><div class="shipping-options"><label class="shipping-option"><input type="radio" checked disabled><span class="shipping-provider-mark">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado pela Relpps no pedido.</small></span><strong>A calcular</strong></label></div><div class="uber-checkout-notice"><b>Como funciona</b><span>Após o pedido ser criado, a Relpps informa o valor da entrega no pedido. Quando o frete for lançado, o botão de pagamento aparecerá nesta página com o valor total.</span></div>`;
     return;
   }
   const qs=shippingQuotes.melhor_envio||[];
@@ -2045,11 +2045,21 @@ function initHeroSlider(){
   const dots=[...document.querySelectorAll('.hero-dot')];
   if(!track||!slides.length)return;
   let index=0, timer;
+  const syncHeight=()=>{
+    const img=slides[index]?.querySelector('img');
+    if(!img) return;
+    const apply=()=>{
+      const w=img.naturalWidth||0, h=img.naturalHeight||0;
+      if(w&&h) track.parentElement.style.aspectRatio=`${w} / ${h}`;
+    };
+    if(img.complete) apply(); else img.addEventListener('load',apply,{once:true});
+  };
   const show=(n)=>{
     index=(n+slides.length)%slides.length;
     track.style.transform=`translate3d(${-index*100}%,0,0)`;
     slides.forEach((el,i)=>el.classList.toggle('active',i===index));
     dots.forEach((el,i)=>el.classList.toggle('active',i===index));
+    syncHeight();
   };
   const restart=()=>{clearInterval(timer);timer=setInterval(()=>show(index+1),8000)};
   document.querySelector('.hero-prev')?.addEventListener('click',()=>{show(index-1);restart()});
@@ -2057,6 +2067,7 @@ function initHeroSlider(){
   dots.forEach((d,i)=>d.addEventListener('click',()=>{show(i);restart()}));
   track.addEventListener('mouseenter',()=>clearInterval(timer));
   track.addEventListener('mouseleave',restart);
+  window.addEventListener('resize',syncHeight,{passive:true});
   show(0);restart();
 }
 

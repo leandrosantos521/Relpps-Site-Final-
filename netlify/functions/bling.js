@@ -83,7 +83,12 @@ async function blingFetch(path, options={}, attempt=0) {
     return blingFetch(path, options, attempt+1);
   }
   if(!r.ok){
-    if(r.status===403) throw new Error('Bling HTTP 403: o aplicativo não tem o escopo/permissão necessário para esta operação. Reautorize o aplicativo com Pedido de Venda (order) habilitado.');
+    if(r.status===403){
+      const needed = /pedidos\/vendas/i.test(path) ? 'order' : /produtos/i.test(path) ? 'product' : /estoques/i.test(path) ? 'stock' : 'o escopo correspondente';
+      const err=new Error(`Bling HTTP 403: o token atual não possui o escopo ${needed}. No Bling, salve o aplicativo com esse escopo e autorize novamente a Relpps.`);
+      err.statusCode=403; err.reconnectUrl='/api/bling?action=authorize'; err.path=path;
+      throw err;
+    }
     throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
   }
   return data;
@@ -239,7 +244,7 @@ exports.handler = async (event) => {
         const stored=await getBlingOAuth();
         connected=Boolean(process.env.BLING_ACCESS_TOKEN || stored?.access_token || process.env.BLING_REFRESH_TOKEN);
       } catch(e) { connected=Boolean(process.env.BLING_ACCESS_TOKEN || process.env.BLING_REFRESH_TOKEN); }
-      return json(200,{ok:true,connected,oauthRedirect:redirectUri()});
+      return json(200,{ok:true,connected,oauthRedirect:redirectUri(),authorizeUrl:`${publicSiteUrl()}/api/bling?action=authorize`});
     }
 
     if(action==="image"){
@@ -295,6 +300,6 @@ exports.handler = async (event) => {
     return json(404,{message:"Ação não encontrada."});
   } catch (err) {
     console.error(err);
-    return json(500,{message:err.message||"Erro interno"});
+    return json(Number(err.statusCode)||500,{message:err.message||"Erro interno",reconnectUrl:err.reconnectUrl||null,blingPath:err.path||null});
   }
 };

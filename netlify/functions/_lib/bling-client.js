@@ -29,7 +29,15 @@ async function blingFetch(path, options={}){
   const r=await fetch(`${BLING_BASE}${path}`,{...options,headers});
   const text=await r.text();
   let data={}; try{data=JSON.parse(text)}catch{}
-  if(!r.ok) throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
+  if(!r.ok){
+    if(r.status===403){
+      const needed=/pedidos\/vendas/i.test(path)?'order':/produtos/i.test(path)?'product':/estoques/i.test(path)?'stock':'o escopo correspondente';
+      const err=new Error(`Bling HTTP 403: o token não possui o escopo ${needed}. Reautorize o aplicativo Bling da Relpps após conferir os escopos.`);
+      err.statusCode=403; err.reconnectUrl='/api/bling?action=authorize';
+      throw err;
+    }
+    const err=new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`); err.statusCode=r.status; throw err;
+  }
   return data;
 }
 
