@@ -1713,3 +1713,7 @@ body.mobile-nav-open{overflow:hidden}
 .checkout-uber-highlight strong{display:block;color:var(--brown-dark);font-size:13px;margin-bottom:6px;}
 .checkout-uber-highlight p{margin:0;color:#6f6259;font-size:11px;line-height:1.7;}
 @media(max-width:600px){.hero-slider{aspect-ratio:16/9}.hero-slide img{object-fit:contain}.cart-page-shipping-option{padding:13px 11px;}}
+
+/* ===== ÚLTIMO AJUSTE — REMOVER TRAÇO ENTRE CABEÇALHO PRETO E MENU ===== */
+.site-header{border-bottom:0!important;box-shadow:none!important;}
+.nav-bar{border-top:0!important;}
