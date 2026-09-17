@@ -39,22 +39,59 @@ function parseRelppsMeta(order){
   if(!m) return {};
   try{return JSON.parse(m[1])||{};}catch{return {};}
 }
+function parseRelppsPaymentMeta(order){
+  const text=String(order?.observacoesInternas||'');
+  const m=text.match(/RELPPS_PAYMENT_META:(\{[^\n]*\})/);
+  if(!m) return {};
+  try{return JSON.parse(m[1])||{};}catch{return {};}
+}
+function parseRelppsFreightMeta(order){
+  const text=String(order?.observacoesInternas||'');
+  const m=text.match(/RELPPS_FREIGHT_META:(\{[^\n]*\})/);
+  if(!m) return {};
+  try{return JSON.parse(m[1])||{};}catch{return {};}
+}
 function blingToLocalOrder(order){
   if(!order) return null;
   const meta=parseRelppsMeta(order);
-  const freightText=String(order?.observacoesInternas||'');
-  const fm=freightText.match(/RELPPS_FREIGHT_META:(\{[^\n]*\})/);
-  let freightMeta={}; try{if(fm) freightMeta=JSON.parse(fm[1])||{};}catch{}
+  const paymentMeta=parseRelppsPaymentMeta(order);
+  const freightMeta=parseRelppsFreightMeta(order);
   const label=order.transporte?.etiqueta||{};
+  const subtotal=Number(order.totalProdutos||0);
+  const discount=Number(order.desconto?.valor||0);
+  const freight=Number(order.transporte?.frete||0);
+  const items=Array.isArray(order.itens)?order.itens.map(i=>({
+    id:i?.produto?.id||i?.id||i?.codigo||'',
+    productId:i?.produto?.id||i?.id||'',
+    name:i?.descricao||i?.produto?.nome||'Produto',
+    quantity:Number(i?.quantidade||1),
+    price:Number(i?.valor||0),
+    unitPrice:Number(i?.valor||0),
+    codigo:i?.codigo||'',
+    raw:i
+  })):[];
+  const customer={
+    name:order.contato?.nome||label.nome||'Cliente Relpps',
+    cpf:order.contato?.numeroDocumento||'',
+    email:order.contato?.email||'',
+    phone:order.contato?.telefone||label.telefone||''
+  };
+  const total=Number(order.total||Math.max(0,subtotal-discount)+freight);
+  const paymentUrl=String(paymentMeta.payment_url||'').trim()||null;
+  const rawFreightPayment=paymentUrl?{payment_url:paymentUrl,order_nsu:paymentMeta.order_nsu||String(order.numeroLoja||order.id)}:{};
   return {
     id:String(order.numeroLoja||order.id),
     status:meta.paid?'PAID':'AWAITING_PAYMENT',
     payment_status:meta.paid?'APPROVED':'AWAITING_PAYMENT',
     payment_method:meta.payment||'card',
+    payment_url:paymentUrl,
     bling_order_id:order.id,
-    totals:{total:Number(order.total||0),subtotal:Number(order.totalProdutos||0),shipping:Number(order.transporte?.frete||0)},
-    delivery:{method:meta.method||'delivery',cep:label.cep||'',address:label.endereco||'',number:label.numero||'',complement:label.complemento||'',district:label.bairro||'',city:label.municipio?`${label.municipio}${label.uf?` / ${label.uf}`:''}`:'',shipping:{...freightMeta}},
-    raw:{fulfillmentStatus:freightMeta.paid?'Liberado para entrega':(meta.paid?(meta.method==='pickup_uber'?'Aguardando liberação da loja':(meta.method==='pickup'?'Liberado para retirada':'Aguardando pagamento do frete')):(meta.fulfillmentStatus||'Aguardando pagamento')),bling:order,freight:freightMeta,freightPayment:freightMeta.payment||null}
+    customer,
+    items,
+    discounts:{automaticDiscount:Number(meta.automaticDiscount||0),couponDiscount:Number(meta.couponDiscount||0)},
+    totals:{total,subtotal,shipping:freight,automaticDiscount:Number(meta.automaticDiscount||0),couponDiscount:Number(meta.couponDiscount||0)},
+    delivery:{method:meta.method||'delivery',cep:label.cep||'',address:label.endereco||'',number:label.numero||'',complement:label.complemento||'',district:label.bairro||'',city:label.municipio?`${label.municipio}${label.uf?` / ${label.uf}`:''}`:'',shipping:{...freightMeta,price:freight||Number(freightMeta.price||0)}},
+    raw:{customer,items,discounts:{automaticDiscount:Number(meta.automaticDiscount||0),couponDiscount:Number(meta.couponDiscount||0)},fulfillmentStatus:freightMeta.paid?'Liberado para entrega':(meta.paid?(meta.method==='pickup_uber'?'Aguardando liberação da loja':(meta.method==='pickup'?'Liberado para retirada':'Aguardando pagamento')):(meta.fulfillmentStatus||'Aguardando pagamento')),bling:order,freight:freightMeta,freightPayment:{...rawFreightPayment,payment_url:paymentUrl}}
   };
 }
 async function resolveOrder(orderId){
@@ -63,15 +100,33 @@ async function resolveOrder(orderId){
   try{const found=await findSaleOrderByStoreNumber(orderId);return blingToLocalOrder(found);}catch(e){console.warn('[Checkout] Não foi possível localizar pedido no Bling:',e.message);return null;}
 }
 
-async function infinitePay(path, options={}){
-  const r=await fetch(`https://api.checkout.infinitepay.io${path}`,{
-    ...options,
-    headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers||{})}
-  });
-  const text=await r.text();
-  let data={}; try{data=JSON.parse(text)}catch{}
-  if(!r.ok) throw new Error(data?.message||data?.error||`InfinitePay HTTP ${r.status}`);
-  return data;
+async function infinitePay(path, options={}, attempt=0){
+  try{
+    const r=await fetch(`https://api.checkout.infinitepay.io${path}`,{
+      ...options,
+      headers:{Accept:'application/json','Content-Type':'application/json',...(options.headers||{})}
+    });
+    const text=await r.text();
+    let data={}; try{data=JSON.parse(text)}catch{}
+    if(!r.ok){
+      const retryable=r.status===408||r.status===429||r.status>=500;
+      if(retryable && attempt<2){
+        const retryAfter=Number(r.headers.get('retry-after')||0);
+        await new Promise(resolve=>setTimeout(resolve,retryAfter>0?Math.min(retryAfter*1000,5000):700*(attempt+1)));
+        return infinitePay(path,options,attempt+1);
+      }
+      const err=new Error(data?.message||data?.error||`InfinitePay HTTP ${r.status}`);
+      err.statusCode=r.status;
+      throw err;
+    }
+    return data;
+  }catch(e){
+    if(attempt<2 && !e.statusCode){
+      await new Promise(resolve=>setTimeout(resolve,650*(attempt+1)));
+      return infinitePay(path,options,attempt+1);
+    }
+    throw e;
+  }
 }
 
 const DEFAULT_INFINITEPAY_HANDLE='rps210323';
@@ -206,33 +261,76 @@ async function createFullOrderPayment(order){
   return {checkout,paymentUrl};
 }
 
+async function persistUberPaymentMeta(blingOrder, {paymentUrl,total,freight}){
+  if(!blingOrder?.id || !paymentUrl) return null;
+  const note=String(blingOrder.observacoesInternas||'');
+  const cleaned=note.replace(/\s*\|?\s*RELPPS_PAYMENT_META:\{[^\n]*\}/,'').trim();
+  const meta={payment_url:String(paymentUrl),order_nsu:String(blingOrder.numeroLoja||blingOrder.id),total:money(total),freight:money(freight),created_at:new Date().toISOString()};
+  const next={...blingOrder,observacoesInternas:`${cleaned}${cleaned?' | ':''}RELPPS_PAYMENT_META:${JSON.stringify(meta)}`};
+  return require('./_lib/bling-client').blingFetch(`/pedidos/vendas/${encodeURIComponent(blingOrder.id)}`,{method:'PUT',body:JSON.stringify(next)});
+}
+
+async function syncUberFreightForOrder(id){
+  const order=await resolveOrder(id);
+  if(!order) throw Object.assign(new Error('Pedido não encontrado.'),{statusCode:404});
+  if(order.delivery?.method!=='uber') throw Object.assign(new Error('Este pedido não foi feito com Uber Entregas.'),{statusCode:409});
+  if(!order.bling_order_id) throw Object.assign(new Error('O pedido ainda não possui ID no Bling.'),{statusCode:409});
+  const bling=await getSaleOrder(order.bling_order_id);
+  const price=money(bling?.transporte?.frete||0);
+  if(price<=0) throw Object.assign(new Error('O Bling ainda não possui um valor de frete maior que zero para este pedido.'),{statusCode:409});
+
+  const blingMeta=parseRelppsMeta(bling);
+  const blingPayment=parseRelppsPaymentMeta(bling);
+  const existingFreight=order.delivery?.shipping||{};
+  const existingPayment=order.raw?.freightPayment||{};
+  const knownPaymentUrl=String(existingPayment.payment_url||order.payment_url||blingPayment.payment_url||'').trim();
+
+  const subtotal=money(order.totals?.subtotal||bling?.totalProdutos||0);
+  const automaticDiscount=money(order.totals?.automaticDiscount||blingMeta.automaticDiscount||0);
+  const couponDiscount=money(order.totals?.couponDiscount||blingMeta.couponDiscount||0);
+  const blingDiscount=money(bling?.desconto?.valor||0);
+  const discounts=money(automaticDiscount+couponDiscount || blingDiscount);
+  const productTotal=Math.max(0,subtotal-discounts);
+  const totals={...(order.totals||{}),subtotal,automaticDiscount,couponDiscount,shipping:price,total:money(productTotal+price)};
+
+  if(Number(existingFreight.price||0)===price && knownPaymentUrl){
+    if(Number(order.totals?.total||0)!==totals.total || Number(bling?.total||0)!==totals.total){
+      try{await updateSaleOrderFreight(order.bling_order_id,{price,total:totals.total,provider:'uber',label:'Uber Entregas',service:'manual_bling'});}catch(e){console.warn('[Bling sync reuse]',e.message)}
+    }
+    await safeUpdateOrder(id,{delivery:{...(order.delivery||{}),shipping:{...existingFreight,price,label:'Uber Entregas',service:'manual_bling'}},totals,payment_url:knownPaymentUrl,raw:{...(order.raw||{}),totals,freightPayment:{...(existingPayment||{}),payment_url:knownPaymentUrl,order_nsu:id}}});
+    return {ok:true,order:{id,freight:{...existingFreight,price},totals,paymentUrl:knownPaymentUrl},paymentUrl:knownPaymentUrl,reused:true};
+  }
+
+  const freight={provider:'uber',price,label:'Uber Entregas',service:'manual_bling',paid:false,source:'bling',updatedAt:new Date().toISOString()};
+  const delivery={...(order.delivery||{}),shipping:freight};
+  const raw={...(order.raw||{}),delivery,totals,freight,fulfillmentStatus:'Aguardando pagamento',blingFreightSyncedAt:new Date().toISOString()};
+  const fullOrder={...order,delivery,totals,customer:order.customer||order.raw?.customer||{},items:order.items||order.raw?.items||[],id:order.id};
+  let paymentUrl=knownPaymentUrl||null,checkout=null;
+  if(isProduction() && !paymentUrl) ({checkout,paymentUrl}=await createFullOrderPayment(fullOrder));
+  if(!paymentUrl && !isProduction()) paymentUrl=null;
+
+  // Mantém o total do Pedido de Venda coerente com o valor final que será cobrado.
+  try{await updateSaleOrderFreight(order.bling_order_id,{price,total:totals.total,provider:'uber',label:'Uber Entregas',service:'manual_bling'});}catch(e){
+    const err=new Error(`Frete lido do Bling, mas não foi possível atualizar o total do pedido: ${e.message}`); err.statusCode=e.statusCode||502; throw err;
+  }
+
+  if(paymentUrl){
+    try{
+      const freshBling=await getSaleOrder(order.bling_order_id);
+      await persistUberPaymentMeta(freshBling||bling,{paymentUrl,total:totals.total,freight:price});
+    }catch(e){console.warn('[Bling payment meta] link não gravado no Bling:',e.message)}
+  }
+
+  await safeUpdateOrder(id,{delivery,totals,payment_url:paymentUrl,raw:{...raw,freightPayment:{payment_url:paymentUrl,checkout,order_nsu:id}}});
+  return {ok:true,order:{id,freight,totals,paymentUrl},paymentUrl};
+}
+
 async function syncUberFreightFromBling(event){
   let body={};try{body=JSON.parse(event.body||'{}')}catch{}
   if(!adminSecretOk(event,body)) return json(401,{message:'Não autorizado.'});
   const id=String(body.order||'').trim(); if(!id)return json(400,{message:'Informe o número do pedido.'});
-  const order=await resolveOrder(id); if(!order)return json(404,{message:'Pedido não encontrado.'});
-  if(order.delivery?.method!=='uber') return json(409,{message:'Este pedido não foi feito com Uber Entregas.'});
-  if(!order.bling_order_id) return json(409,{message:'O pedido ainda não possui ID no Bling.'});
-  const bling=await getSaleOrder(order.bling_order_id);
-  const price=money(bling?.transporte?.frete||0);
-  if(price<=0) return json(409,{message:'O Bling ainda não possui um valor de frete maior que zero para este pedido.'});
-  const existingFreight=order.delivery?.shipping||{};
-  const existingPayment=order.raw?.freightPayment||{};
-  if(Number(existingFreight.price||0)===price && existingPayment.payment_url){
-    return json(200,{ok:true,order:{id,freight:existingFreight,totals:order.totals,paymentUrl:existingPayment.payment_url},paymentUrl:existingPayment.payment_url,reused:true});
-  }
-  const subtotal=money(order.totals?.subtotal||bling?.totalProdutos||0);
-  const discounts=money(order.totals?.automaticDiscount||0)+money(order.totals?.couponDiscount||0);
-  const productTotal=Math.max(0,subtotal-discounts);
-  const totals={...(order.totals||{}),subtotal,shipping:price,total:money(productTotal+price)};
-  const freight={provider:'uber',price,label:'Uber Entregas',service:'manual_bling',paid:false,source:'bling',updatedAt:new Date().toISOString()};
-  const delivery={...(order.delivery||{}),shipping:freight};
-  const raw={...(order.raw||{}),delivery,totals,freight,fulfillmentStatus:'Aguardando pagamento',blingFreightSyncedAt:new Date().toISOString()};
-  const fullOrder={...order,delivery,totals,customer:order.raw?.customer||order.customer,items:order.items||order.raw?.items||[],id:order.id};
-  let paymentUrl=null,checkout=null;
-  if(isProduction()) ({checkout,paymentUrl}=await createFullOrderPayment(fullOrder));
-  const updated=await safeUpdateOrder(id,{delivery,totals,payment_url:paymentUrl,raw:{...raw,freightPayment:{payment_url:paymentUrl,checkout,order_nsu:id}}});
-  return json(200,{ok:true,order:{id,freight,totals,paymentUrl},paymentUrl});
+  try { return json(200,await syncUberFreightForOrder(id)); }
+  catch(e){ return json(Number(e.statusCode)||500,{message:e.message||'Falha ao sincronizar o frete do Bling.'}); }
 }
 
 async function calculateFreight(event){
@@ -480,6 +578,8 @@ async function requestUber(event){
   await safeUpdateOrder(id,{raw});
   return json(200,{ok:true,uber});
 }
+
+exports.syncUberFreightForOrder=syncUberFreightForOrder;
 
 exports.handler=async(event)=>{
   try{

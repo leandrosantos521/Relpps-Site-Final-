@@ -1,5 +1,5 @@
 const BLING_BASE = 'https://api.bling.com.br/Api/v3';
-const { getBlingOAuth, saveBlingOAuth } = require('./bling-oauth-store');
+const { getBlingOAuth, saveBlingOAuth, clearBlingOAuth } = require('./bling-oauth-store');
 
 function cleanDoc(v){ return String(v || '').replace(/\D/g,''); }
 
@@ -31,9 +31,15 @@ async function blingFetch(path, options={}){
   let data={}; try{data=JSON.parse(text)}catch{}
   if(!r.ok){
     if(r.status===403){
-      const needed=/pedidos\/vendas/i.test(path)?'order':/produtos/i.test(path)?'product':/estoques/i.test(path)?'stock':'o escopo correspondente';
-      const err=new Error(`Bling HTTP 403: o token não possui o escopo ${needed}. Reautorize o aplicativo Bling da Relpps após conferir os escopos.`);
-      err.statusCode=403; err.reconnectUrl='/api/bling?action=authorize';
+      const needed=/pedidos\/vendas/i.test(path)?'order':/produtos/i.test(path)?'product':/estoques/i.test(path)?'stock':/contatos/i.test(path)?'contact':/formas-pagamentos/i.test(path)?'finance':'o escopo correspondente';
+      // 403 no Bling não é um erro de payload: é um token que não tem a permissão
+      // do recurso. Quando os escopos do aplicativo são alterados, o Bling revoga
+      // as autorizações anteriores. Limpamos o token antigo para impedir que o
+      // site fique preso reutilizando a autorização velha.
+      try{ if(!process.env.BLING_ACCESS_TOKEN) await clearBlingOAuth(); }catch(e){ console.warn('[Bling] Não foi possível limpar autorização antiga:',e.message); }
+      const err=new Error(`A conexão do Bling precisa ser renovada para usar o escopo ${needed}.`);
+      err.statusCode=409; err.code='BLING_REAUTHORIZE_REQUIRED'; err.blingStatus=403;
+      err.reconnectUrl='/api/bling?action=authorize'; err.path=path;
       throw err;
     }
     const err=new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`); err.statusCode=r.status; throw err;
@@ -83,11 +89,18 @@ async function findPaymentForm(type){
   const envKey = type==='pix'?'BLING_FORMA_PAGAMENTO_PIX_ID':type==='card'?'BLING_FORMA_PAGAMENTO_CARTAO_ID':'BLING_FORMA_PAGAMENTO_DINHEIRO_ID';
   if(process.env[envKey]) return Number(process.env[envKey]);
   const tipoPagamento = type==='pix'?17:type==='card'?3:1;
-  const data=await blingFetch(`/formas-pagamentos?pagina=1&limite=100&tiposPagamentos[]=${tipoPagamento}&situacao=1`);
-  const rows=Array.isArray(data?.data)?data.data:[];
-  const preferred=type==='pix'?/pix|instantâneo/i:type==='card'?/cart[aã]o.*cr[eé]dito|cr[eé]dito/i:/dinheiro/i;
-  const hit=rows.find(x=>preferred.test(String(x?.descricao||''))) || rows[0];
-  return hit?.id ? Number(hit.id) : null;
+  try{
+    const data=await blingFetch(`/formas-pagamentos?pagina=1&limite=100&tiposPagamentos[]=${tipoPagamento}&situacao=1`);
+    const rows=Array.isArray(data?.data)?data.data:[];
+    const preferred=type==='pix'?/pix|instantâneo/i:type==='card'?/cart[aã]o.*cr[eé]dito|cr[eé]dito/i:/dinheiro/i;
+    const hit=rows.find(x=>preferred.test(String(x?.descricao||''))) || rows[0];
+    return hit?.id ? Number(hit.id) : null;
+  }catch(e){
+    // O checkout da Relpps é liquidado pela InfinitePay. A forma de pagamento
+    // do Bling é apenas informativa e não pode impedir a criação do pedido.
+    if(e?.blingStatus===403 || e?.statusCode===409) return null;
+    throw e;
+  }
 }
 
 function situationId(name){

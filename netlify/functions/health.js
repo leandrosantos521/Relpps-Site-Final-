@@ -3,6 +3,16 @@ function json(statusCode, body){
   return {statusCode,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"},body:JSON.stringify(body)};
 }
 
+async function supabaseTableExists(table){
+  const url=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
+  const key=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'');
+  if(!url||!key)return false;
+  try{
+    const r=await fetch(`${url}/rest/v1/${table}?select=*&limit=1`,{headers:{apikey:key,Authorization:`Bearer ${key}`,Accept:'application/json'}});
+    return r.ok;
+  }catch{return false;}
+}
+
 exports.handler=async()=>{
   let oauth=null;
   try{oauth=await getBlingOAuth();}catch{}
@@ -17,9 +27,19 @@ exports.handler=async()=>{
     supabase:Boolean(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY),
     shipping:Boolean(process.env.MELHOR_ENVIO_TOKEN&&String(process.env.STORE_POSTAL_CODE||'').replace(/\D/g,'').length===8),
     production:process.env.CHECKOUT_TEST_MODE==='false',
-    publicSite:Boolean(process.env.PUBLIC_SITE_URL)
+    publicSite:Boolean(process.env.PUBLIC_SITE_URL),
+    relppsOrders:false,
+    relppsBlingOAuth:false,
+    relppsMelhorEnvioOAuth:false
   };
-  // relpps_orders is optional for the checkout fallback; it is still recommended for history/coupons.
+  if(checks.supabase){
+    [checks.relppsOrders,checks.relppsBlingOAuth,checks.relppsMelhorEnvioOAuth]=await Promise.all([supabaseTableExists('relpps_orders'),supabaseTableExists('relpps_bling_oauth'),supabaseTableExists('relpps_melhor_envio_oauth')]);
+  }
   const ok=checks.bling&&checks.blingOrders&&checks.infinitePay&&checks.production&&checks.publicSite;
-  return json(ok?200:503,{ok,service:'Relpps production preflight',checks,warning:checks.shipping?'':'Frete Melhor Envio ainda não configurado; retirada presencial continua disponível.',note:'A tabela relpps_orders do Supabase é recomendada, mas não bloqueia o checkout InfinitePay.'});
+  const warnings=[];
+  if(!checks.relppsOrders)warnings.push('Supabase: crie a tabela relpps_orders pelo SQL entregue no ZIP.');
+  if(!checks.relppsBlingOAuth)warnings.push('Supabase: crie relpps_bling_oauth para manter o OAuth do Bling renovável.');
+  if(!checks.shipping)warnings.push('Melhor Envio ainda não está conectado; Uber manual e retirada continuam disponíveis.');
+  if(!checks.blingPendingSituation||!checks.blingPaidSituation)warnings.push('Opcional: informe os IDs das situações Aguardando Pagamento e Pago do Bling para atualizar a situação automaticamente.');
+  return json(ok?200:503,{ok,service:'Relpps production preflight',checks,warnings,note:'Nenhuma chave secreta é retornada por este endpoint.'});
 };

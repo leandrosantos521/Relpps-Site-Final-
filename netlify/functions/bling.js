@@ -84,9 +84,10 @@ async function blingFetch(path, options={}, attempt=0) {
   }
   if(!r.ok){
     if(r.status===403){
-      const needed = /pedidos\/vendas/i.test(path) ? 'order' : /produtos/i.test(path) ? 'product' : /estoques/i.test(path) ? 'stock' : 'o escopo correspondente';
-      const err=new Error(`Bling HTTP 403: o token atual não possui o escopo ${needed}. No Bling, salve o aplicativo com esse escopo e autorize novamente a Relpps.`);
-      err.statusCode=403; err.reconnectUrl='/api/bling?action=authorize'; err.path=path;
+      const needed = /pedidos\/vendas/i.test(path) ? 'order' : /produtos/i.test(path) ? 'product' : /estoques/i.test(path) ? 'stock' : /contatos/i.test(path) ? 'contact' : 'o escopo correspondente';
+      try { if(!process.env.BLING_ACCESS_TOKEN) await clearBlingOAuth(); } catch(e) { console.warn('[Bling] limpeza da autorização antiga falhou:',e.message); }
+      const err=new Error(`A conexão do Bling precisa ser renovada para usar o escopo ${needed}.`);
+      err.statusCode=409; err.code='BLING_REAUTHORIZE_REQUIRED'; err.blingStatus=403; err.reconnectUrl='/api/bling?action=authorize'; err.path=path;
       throw err;
     }
     throw new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`);
@@ -209,6 +210,11 @@ exports.handler = async (event) => {
     const action = event.queryStringParameters?.action || "products";
 
     if(action==="health") return json(200,{ok:true,service:"Relpps ↔ Bling",oauthRedirect:redirectUri()});
+
+    if(action==="repair") {
+      try { if(!process.env.BLING_ACCESS_TOKEN) await clearBlingOAuth(); } catch(e) { console.warn("[Bling] não foi possível limpar autorização antiga:",e.message); }
+      return {statusCode:302,headers:{Location:`${publicSiteUrl()}/api/bling?action=authorize`,"Cache-Control":"no-store"},body:""};
+    }
 
     if(action==="authorize") {
       const clientId=process.env.BLING_CLIENT_ID;
