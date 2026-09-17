@@ -1777,7 +1777,13 @@ function releaseMessage(order){ const type=isPickupMethod(order.delivery.method)
 async function createCheckoutOrder(payload){
   const r=await fetch("/api/checkout?action=create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const data=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(data.message||"Não foi possível criar o pedido.");
+  if(!r.ok){
+    if(data.code==="BLING_REAUTHORIZE_REQUIRED"){
+      toast("Atualizando a conexão segura com o Bling…");
+      setTimeout(()=>{ window.location.href="/api/bling?action=repair"; },650);
+    }
+    throw new Error(data.message||"Não foi possível criar o pedido.");
+  }
   return data;
 }
 async function getCheckoutOrderStatus(id){

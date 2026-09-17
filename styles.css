@@ -1743,6 +1743,67 @@ body.mobile-nav-open{overflow:hidden}
 @media(max-width:600px){.hero-slider{aspect-ratio:16/9!important}.hero-slide img{object-fit:contain!important}}
 
 
+/* =========================================================
+   HERO FINAL — TELONA, LARGURA TOTAL E ARTE INTEIRA
+   ========================================================= */
+.hero-slider{
+  position:relative!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:2 / 1!important;
+  overflow:hidden!important;
+  background:#f5efe7!important;
+  box-shadow:none!important;
+}
+.hero-slides{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  width:100%!important;
+  height:100%!important;
+}
+.hero-slide{
+  position:relative!important;
+  inset:auto!important;
+  flex:0 0 100%!important;
+  width:100%!important;
+  height:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  opacity:1!important;
+  visibility:visible!important;
+  overflow:hidden!important;
+  background:#f5efe7!important;
+}
+.hero-slide::after{display:none!important}
+.hero-slide img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:#f5efe7!important;
+  transform:scale(1)!important;
+  transition:transform 8s cubic-bezier(.2,.65,.2,1)!important;
+}
+.hero-slide.active img{transform:scale(1.012)!important}
+.hero-arrow{z-index:8!important}
+.hero-dots{z-index:9!important}
+@media(max-width:900px){
+  .hero-slider{aspect-ratio:2 / 1!important;height:auto!important;min-height:0!important}
+  .hero-slide img{object-fit:contain!important}
+}
+@media(max-width:600px){
+  .hero-slider{aspect-ratio:2 / 1!important}
+  .hero-slide img{object-fit:contain!important}
+}
+
+
 /* HERO FINAL — TELONA E ARTE INTEIRA */
 .hero-slider{position:relative!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;aspect-ratio:2 / 1!important;overflow:hidden!important;background:#f5efe7!important;box-shadow:none!important}
 .hero-slides{position:absolute!important;inset:0!important;display:flex!important;width:100%!important;height:100%!important}
@@ -1753,3 +1814,14 @@ body.mobile-nav-open{overflow:hidden}
 .hero-arrow{z-index:8!important}.hero-dots{z-index:9!important}
 @media(max-width:900px){.hero-slider{aspect-ratio:2 / 1!important;height:auto!important;min-height:0!important}.hero-slide img{object-fit:contain!important}}
 @media(max-width:600px){.hero-slider{aspect-ratio:2 / 1!important}.hero-slide img{object-fit:contain!important}}
+
+/* RELPPS PREMIUM FINAL — 17/09/2026
+   Microinterações seguras: não alteram o fluxo do checkout nem o recorte das artes. */
+:root{--relpps-pink:#c98da0;--relpps-ink:#171311;--relpps-cream:#fbf8f5}
+.btn,.hero-arrow,.hero-dot,.header-icon,.category-card,.product-card,.service-card,.shipping-option,.cart-page-shipping-option,.payment-option{transition:transform .22s ease,box-shadow .22s ease,background-color .22s ease,border-color .22s ease,opacity .22s ease}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(42,29,20,.13)}
+.product-card:hover,.category-card:hover,.service-card:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(42,29,20,.11)}
+.hero-slider{isolation:isolate}
+.hero-slide img{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.shipping-option:hover,.cart-page-shipping-option:hover{border-color:rgba(183,139,67,.42);box-shadow:0 10px 28px rgba(40,28,20,.06)}
+@media(prefers-reduced-motion:reduce){.btn,.hero-arrow,.hero-dot,.header-icon,.category-card,.product-card,.service-card,.shipping-option,.cart-page-shipping-option,.payment-option{transition:none!important}.hero-slide img{transition:none!important;transform:none!important}}
