@@ -1,0 +1,18 @@
+RELPPS — VALIDAÇÃO FINAL
+Data: 17/09/2026
+
+OK — JavaScript: todos os .js passaram no node --check.
+OK — domínio antigo relppscosmeticoss.netlify.app: nenhuma ocorrência encontrada.
+OK — endpoint antigo /api/v2/me/ecommerce/calculate: nenhuma ocorrência encontrada.
+OK — Melhor Envio: endpoint atual /api/v2/me/shipment/calculate.
+OK — Correios: serviços solicitados 1 (PAC) e 2 (SEDEX).
+OK — Mini Envios 17 removido da cotação da loja.
+OK — PAC: se faltar no retorno combinado, há segunda tentativa isolada do serviço 1.
+OK — interface: PAC é priorizado antes de SEDEX.
+OK — checkout: valida cotação assinada antes de cobrar o frete.
+OK — InfinitePay: checkout continua separado do formulário de cartão; o cliente é redirecionado para a InfinitePay.
+OK — Bling: erros de autenticação são tratados com redirecionamento para OAuth/reautorização.
+OK — saúde: /api/health considera também o OAuth do Melhor Envio salvo no Supabase.
+
+LIMITAÇÃO DE VALIDAÇÃO:
+O ambiente desta sessão não consegue resolver DNS do domínio Netlify para executar um teste HTTP real contra a produção. Portanto, não é possível afirmar que credenciais/autorizações externas estão válidas sem publicar e testar no Netlify.

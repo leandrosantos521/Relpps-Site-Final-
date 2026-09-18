@@ -1,4 +1,114 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Retirada | Relpps Cosméticos</title><link rel="icon" href="./assets/logo.png"><link rel="stylesheet" href="./styles.css"></head><body class="pickup-page"><main class="pickup-shell"><div class="pickup-card"><a href="./index.html" class="pickup-brand"><img src="./assets/relpps-logo-vendas-preta.png" alt="Relpps Cosméticos"></a><span class="eyebrow">RELPPS COSMÉTICOS</span><h1>Retirada do pedido</h1><p id="pickupText">Consultando o pedido…</p><div class="pickup-address"><img src="./assets/relpps-store-front.jpg" alt="Fachada da Relpps Cosméticos"><div><b>📍 Relpps Cosméticos</b><p>C 12, Área Especial 02, Loja 30<br>Taguatinga Centro, Brasília — DF<br>CEP 72010-901</p><a href="https://www.google.com/maps/search/?api=1&query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener">ABRIR LOCALIZAÇÃO ↗</a></div></div><div id="pickupActions" class="pickup-actions"></div></div></main><script>
-const id=new URLSearchParams(location.search).get('order');const $=s=>document.querySelector(s);const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-async function load(){if(!id){$('#pickupText').textContent='Pedido não informado.';return}try{const r=await fetch(`/.netlify/functions/checkout?action=status&order=${encodeURIComponent(id)}`,{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.message||'Pedido não encontrado');const o=d.order||d;const paid=o.paymentStatus==='APPROVED';const uber=o.delivery?.method==='pickup_uber';if(uber&&paid&&o.fulfillmentStatus==='Liberado para Uber'){$('#pickupText').innerHTML='Seu pedido está <b>liberado</b>. Escolha Uber ou 99 para fazer a retirada por sua conta.';$('#pickupActions').innerHTML='<a class="btn btn-dark" href="https://m.uber.com/ul/" target="_blank" rel="noopener">🛵 ABRIR UBER</a><a class="btn btn-dark" href="https://99app.com/" target="_blank" rel="noopener">🚗 ABRIR 99</a>'}else if(paid){$('#pickupText').innerHTML='Seu pedido está <b>reservado</b>. Apresente o número do pedido na loja para retirar.';$('#pickupActions').innerHTML='<a class="btn btn-gold" href="./pedido.html?order='+encodeURIComponent(id)+'">VER STATUS DO PEDIDO</a>'}else{$('#pickupText').innerHTML='Seu pedido ainda aguarda pagamento. Depois da confirmação, esta página mostrará a situação da retirada.'}}catch(e){$('#pickupText').textContent=e.message}}load();setInterval(load,8000);
-</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pagamento e retirada | Relpps Cosméticos</title>
+<link rel="icon" href="./assets/logo.png">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  .pickup-page{min-height:100vh;background:radial-gradient(circle at 10% 0%,rgba(181,138,67,.16),transparent 28%),radial-gradient(circle at 90% 100%,rgba(180,150,110,.12),transparent 30%),#f6f1ea}
+  .pickup-shell{width:min(980px,calc(100% - 28px));margin:0 auto;padding:38px 0 56px}
+  .pickup-card{overflow:hidden;padding:0!important;border-radius:30px!important;background:#fff!important;border:1px solid #e8ded3!important;box-shadow:0 28px 90px rgba(55,38,24,.13)!important}
+  .pickup-hero{padding:30px 34px 26px;background:linear-gradient(135deg,#17130f,#33261a 65%,#8f6a32);color:#fff}
+  .pickup-brand img{width:150px;filter:brightness(0) invert(1);margin-bottom:22px}
+  .pickup-hero .eyebrow{color:#e8c987!important}
+  .pickup-hero h1{font-size:clamp(34px,5vw,54px)!important;color:#fff!important;margin:8px 0 10px!important}
+  .pickup-hero p{max-width:690px;margin:0;color:rgba(255,255,255,.78);line-height:1.65}
+  .pickup-status{display:flex;gap:12px;align-items:center;margin-top:22px;padding:13px 15px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:rgba(255,255,255,.07)}
+  .pickup-status-dot{width:10px;height:10px;border-radius:50%;background:#e7c26f;box-shadow:0 0 0 6px rgba(231,194,111,.1);flex:none}
+  .pickup-status b{display:block;font-size:13px}.pickup-status small{display:block;color:rgba(255,255,255,.66);margin-top:3px}
+  .pickup-body{padding:30px 34px 34px}
+  .cash-banner{display:none;margin-bottom:22px;padding:18px 20px;border-radius:16px;border:1px solid #e5c995;background:linear-gradient(135deg,#fffaf0,#f7eddc);color:#4a3723}
+  .cash-banner.show{display:block}.cash-banner b{display:block;font-size:17px;margin-bottom:5px}.cash-banner span{font-size:12px;line-height:1.6;color:#766657}
+  .pickup-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:24px;align-items:stretch}
+  .pickup-photo{width:100%;height:100%;min-height:330px;object-fit:cover;border-radius:20px;border:1px solid #e8ded3}
+  .pickup-info{padding:24px;border:1px solid #e7ddd2;border-radius:20px;background:#fffaf5;display:flex;flex-direction:column;justify-content:center}
+  .pickup-info .label{font-size:10px;letter-spacing:1.8px;font-weight:900;color:#ad8039}.pickup-info h2{font:600 28px/1.1 "Playfair Display",serif;color:#34271d;margin:8px 0 12px}.pickup-info p{font-size:13px;line-height:1.7;color:#70645a;margin:0}.pickup-address-line{margin-top:14px;padding-top:14px;border-top:1px solid #eadfd3}.pickup-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.pickup-actions .btn{flex:1;min-width:190px;text-align:center}.pickup-order{margin-top:22px;padding:14px 16px;border-radius:13px;background:#f6f1ea;color:#6c5d50;font-size:11px}.pickup-order b{color:#33261c}.pickup-footer{margin-top:22px;text-align:center;color:#8b7e73;font-size:10px;line-height:1.6}
+  @media(max-width:760px){.pickup-shell{padding:14px 0 28px}.pickup-hero,.pickup-body{padding:24px 20px}.pickup-grid{grid-template-columns:1fr}.pickup-photo{min-height:230px}.pickup-actions{flex-direction:column}.pickup-actions .btn{width:100%}}
+</style>
+</head>
+<body class="pickup-page">
+<main class="pickup-shell">
+  <section class="pickup-card">
+    <div class="pickup-hero">
+      <a href="./index.html" class="pickup-brand"><img src="./assets/relpps-logo-vendas-preta.png" alt="Relpps Cosméticos"></a>
+      <span class="eyebrow">RELPPS COSMÉTICOS · RETIRADA</span>
+      <h1 id="pickupTitle">Seu pedido está reservado.</h1>
+      <p id="pickupText">Estamos consultando o status do pedido para mostrar as próximas orientações.</p>
+      <div class="pickup-status"><span class="pickup-status-dot"></span><div><b id="pickupStatus">Aguardando confirmação</b><small id="pickupStatusSmall">Número do pedido: —</small></div></div>
+    </div>
+    <div class="pickup-body">
+      <div class="cash-banner" id="cashBanner"><b>💵 Pagamento em dinheiro na loja</b><span>Não é necessário pagar online. Vá até a Relpps com o número do pedido, faça o pagamento em dinheiro no momento da retirada e retire seus produtos.</span></div>
+      <div class="pickup-grid">
+        <img class="pickup-photo" src="./assets/relpps-store-front.jpg" alt="Fachada da Relpps Cosméticos">
+        <div class="pickup-info">
+          <span class="label">LOCAL DE PAGAMENTO E RETIRADA</span>
+          <h2>Relpps Cosméticos</h2>
+          <p>Venha até nossa loja para pagar e retirar seu pedido presencialmente.</p>
+          <div class="pickup-address-line">
+            <p><strong>📍 C 12, Área Especial 02, Loja 30</strong><br>Taguatinga Centro, Brasília — DF<br>CEP 72010-901</p>
+          </div>
+          <div class="pickup-actions">
+            <a class="btn btn-gold" href="https://www.google.com/maps/search/?api=1&query=Relpps%20Cosm%C3%A9ticos%20C%2012%20AE%2002%20Loja%2030%20Taguatinga%20Centro%20Bras%C3%ADlia%20DF%2072010-901" target="_blank" rel="noopener">📍 ABRIR LOCALIZAÇÃO</a>
+            <a class="btn btn-dark" href="./pedido.html" id="statusButton">VER STATUS DO PEDIDO</a>
+          </div>
+          <div class="pickup-order">Pedido: <b id="orderId">—</b></div>
+        </div>
+      </div>
+      <div class="pickup-footer">Apresente o número do pedido no atendimento. Se precisar de ajuda, fale com a Relpps pelo WhatsApp.</div>
+    </div>
+  </section>
+</main>
+<script>
+const params=new URLSearchParams(location.search);
+const id=params.get('order');
+const cash=params.get('cash')==='1';
+const $=s=>document.querySelector(s);
+const set=(s,v)=>{const el=$(s);if(el)el.textContent=v};
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+set('#orderId',id||'Não informado');set('#pickupStatusSmall',`Número do pedido: ${id||'—'}`);
+if(id) $('#statusButton').href=`./pedido.html?order=${encodeURIComponent(id)}`;
+if(cash) $('#cashBanner').classList.add('show');
+async function load(){
+  if(!id){set('#pickupTitle','Pedido não informado');set('#pickupText','Volte para a loja e tente finalizar o pedido novamente.');set('#pickupStatus','Aguardando número do pedido');return;}
+  try{
+    const r=await fetch(`/.netlify/functions/checkout?action=status&order=${encodeURIComponent(id)}`,{cache:'no-store'});
+    const d=await r.json(); if(!r.ok)throw new Error(d.message||'Pedido não encontrado.');
+    const o=d.order||d; const paid=o.paymentStatus==='APPROVED'; const method=o.delivery?.method;
+    if(method==='pickup_uber'){
+      if(paid&&o.fulfillmentStatus==='Liberado para Uber'){
+        set('#pickupTitle','Pedido liberado para retirada via Uber / 99');
+        $('#pickupText').innerHTML='O pagamento foi confirmado. Agora você pode solicitar Uber ou 99 por sua conta para buscar o pedido na loja.';
+        set('#pickupStatus','LIBERADO PARA UBER / 99');
+        $('#cashBanner').classList.remove('show');
+        $('#statusButton').textContent='VER DETALHES DO PEDIDO';
+      }else{
+        set('#pickupTitle','Pedido aguardando pagamento');
+        $('#pickupText').innerHTML='Após o pagamento aprovado e a liberação da Relpps, você poderá solicitar Uber ou 99 por sua conta.';
+        set('#pickupStatus','AGUARDANDO PAGAMENTO');
+      }
+      return;
+    }
+    if(cash && method==='pickup'){
+      set('#pickupTitle',paid?'Pagamento confirmado. Retirada liberada.':'Seu pedido está reservado para pagamento na loja.');
+      $('#pickupText').innerHTML=paid?'Seu pagamento foi confirmado. Apresente o número do pedido no atendimento para retirar.':'Vá até a Relpps, pague em dinheiro no momento da retirada e apresente o número do pedido. O pedido ficará aguardando pagamento até o atendimento.';
+      set('#pickupStatus',paid?'PAGAMENTO CONFIRMADO':'PAGAMENTO EM DINHEIRO NA LOJA');
+      $('#cashBanner').classList.add('show');
+      return;
+    }
+    if(paid){
+      set('#pickupTitle','Pedido reservado para retirada.');
+      $('#pickupText').innerHTML='Pagamento confirmado. Apresente o número do pedido no atendimento da Relpps para retirar seus produtos.';
+      set('#pickupStatus','PEDIDO RESERVADO');
+    }else{
+      set('#pickupTitle','Aguardando pagamento');
+      $('#pickupText').innerHTML='O pedido foi criado e ainda aguarda a confirmação do pagamento.';
+      set('#pickupStatus','AGUARDANDO PAGAMENTO');
+    }
+  }catch(e){set('#pickupTitle','Pedido criado');set('#pickupText',e.message||'Não foi possível consultar o status agora.');set('#pickupStatus','CONSULTA TEMPORARIAMENTE INDISPONÍVEL');}
+}
+load();setInterval(load,8000);
+</script>
+</body>
+</html>

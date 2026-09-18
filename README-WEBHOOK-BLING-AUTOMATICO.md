@@ -8,7 +8,7 @@ Alias:
 `Relpps`
 
 URL:
-`https://relppscosmeticoss.netlify.app/.netlify/functions/bling-webhook-background`
+`https://relppscosmetico.netlify.app/.netlify/functions/bling-webhook-background`
 
 ## Configuração no Bling
 
