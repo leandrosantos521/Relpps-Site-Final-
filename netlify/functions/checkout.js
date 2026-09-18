@@ -247,11 +247,11 @@ async function melhorEnvioFreightQuote(order){
   const base=process.env.MELHOR_ENVIO_SANDBOX==='true'?'https://sandbox.melhorenvio.com.br':'https://melhorenvio.com.br';
   const items=orderItemsForShipping(order);
   if(!items.length) throw new Error('O pedido não possui itens para cotar.');
-  const payload={from:{postal_code:from},to:{postal_code:to},products:items.map(i=>({id:i.id,width:i.width,height:i.height,length:i.length,weight:i.weight,insurance_value:i.price,quantity:i.quantity})),options:{receipt:false,own_hand:false}};
+  const payload={from:{postal_code:from},to:{postal_code:to},products:items.map(i=>({id:i.id,width:i.width,height:i.height,length:i.length,weight:i.weight,insurance_value:i.price,quantity:i.quantity})),options:{receipt:false,own_hand:false},services:'1,2'};
   const r=await fetch(`${base}/api/v2/me/shipment/calculate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body:JSON.stringify(payload)});
   const data=await r.json().catch(()=>[]);
   if(!r.ok) throw new Error(data?.message||'Falha na cotação do Melhor Envio.');
-  return Array.isArray(data)?data.filter(x=>!x.error).map(x=>({id:x.id,name:x.name||x.service||'Entrega',company:x.company?.name||x.company||'Melhor Envio',price:money(x.custom_price??x.price),delivery_time:x.custom_delivery_time??x.delivery_time,raw:x})).filter(x=>x.price>0):[];
+  return Array.isArray(data)?data.filter(x=>!x.error).map(x=>({id:x.id,name:x.name||x.service||'Entrega',company:x.company?.name||x.company||'Correios',price:money(x.custom_price??x.price),delivery_time:x.custom_delivery_time??x.delivery_time,raw:x})).filter(x=>x.price>0).sort((a,b)=>{const rank=q=>/^pac(?:\s|$)/i.test(String(q.name))||String(q.id)==='1'?0:/^sedex(?:\s|$)/i.test(String(q.name))||String(q.id)==='2'?1:2;return rank(a)-rank(b)||a.price-b.price;}):[];
 }
 
 async function createFullOrderPayment(order){
@@ -395,13 +395,15 @@ async function createOrder(body){
   }
 
   const delivery={...(body.delivery||{})};
-  if(delivery.method==='melhor_envio'){
+  if(delivery.method==='melhor_envio' || delivery.method==='uber'){
     const sh={...(delivery.shipping||{})};
-    const verification=verifyShippingQuoteToken(sh.quote_token,{provider:'melhor_envio',cep:delivery.cep,price:sh.price,service:sh.id||sh.service});
-    if(!verification.ok) throw new Error(verification.expired?'A cotação do Melhor Envio expirou. Calcule novamente.':'Cotação do Melhor Envio inválida. Calcule o frete novamente antes de pagar.');
-    delivery.shipping={...sh,price:money(verification.price),manual:false,quote_id:verification.quoteId||sh.id};
-  } else if(delivery.method==='uber'){
-    delivery.shipping={provider:'uber',id:'uber_manual',service:'uber_manual',label:'Uber Entregas — A calcular',price:0,manual:true};
+    const provider=delivery.method==='uber'?'uber':'melhor_envio';
+    const verification=verifyShippingQuoteToken(sh.quote_token,{provider,cep:delivery.cep,price:sh.price,service:sh.id||sh.service});
+    if(!verification.ok) throw new Error(verification.expired?'A cotação do frete expirou. Calcule novamente.':`Cotação ${provider==='uber'?'Uber Direct':'Melhor Envio'} inválida. Calcule o frete novamente antes de pagar.`);
+    delivery.shipping={...sh,provider,price:money(verification.price),manual:false,quote_id:verification.quoteId||sh.id,label:provider==='uber'?'Uber Direct':(sh.label||sh.name||'Melhor Envio')};
+    const baseTotals=body.totals||{};
+    const productBase=Math.max(0,Number(baseTotals.subtotal||0)-Number(baseTotals.automaticDiscount||0)-Number(baseTotals.couponDiscount||0));
+    body.totals={...baseTotals,shipping:money(verification.price),total:money(productBase+Number(verification.price||0))};
   } else delivery.shipping={...(delivery.shipping||{}),price:0};
   const baseOrder={...body,delivery,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:fulfillmentForCreate(delivery.method,payment)};
   if(delivery.method==='pickup') baseOrder.delivery={...delivery,pickupAddress:process.env.STORE_PICKUP_ADDRESS||'C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'};
@@ -428,11 +430,6 @@ async function createOrder(body){
     baseOrder.fulfillmentStatus=body.delivery?.method==='pickup'?'Aguardando pagamento na retirada':'Bloqueado';
     await safeUpdateOrder(id,{raw:baseOrder});
     return {ok:true,order:{...baseOrder,bling,paymentUrl:null},paymentUrl:null};
-  }
-
-  if(delivery.method==='uber'){
-    await safeUpdateOrder(id,{payment_url:null,raw:{...baseOrder,bling,freightPending:true,fulfillmentStatus:'Aguardando cálculo do frete'}});
-    return {ok:true,order:{...baseOrder,bling,paymentUrl:null,freightPending:true},paymentUrl:null,freightPending:true};
   }
 
   if(!isProduction()){

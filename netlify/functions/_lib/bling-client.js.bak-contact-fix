@@ -2,18 +2,6 @@ const BLING_BASE = 'https://api.bling.com.br/Api/v3';
 const { getBlingOAuth, saveBlingOAuth, clearBlingOAuth } = require('./bling-oauth-store');
 
 function cleanDoc(v){ return String(v || '').replace(/\D/g,''); }
-function validCPF(v){
-  const cpf=cleanDoc(v);
-  if(cpf.length!==11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  let sum=0; for(let i=0;i<9;i++) sum+=Number(cpf[i])*(10-i);
-  let d1=(sum*10)%11; if(d1===10) d1=0;
-  if(d1!==Number(cpf[9])) return false;
-  sum=0; for(let i=0;i<10;i++) sum+=Number(cpf[i])*(11-i);
-  let d2=(sum*10)%11; if(d2===10) d2=0;
-  return d2===Number(cpf[10]);
-}
-function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(v||'').trim()); }
-function validUF(v){ return /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/i.test(String(v||'').trim()); }
 
 async function getAccessToken(){
   const access=process.env.BLING_ACCESS_TOKEN;
@@ -54,9 +42,7 @@ async function blingFetch(path, options={}){
       err.reconnectUrl='/api/bling?action=authorize'; err.path=path;
       throw err;
     }
-    const detail=data?.error?.description || data?.error?.message || data?.message || data?.description || '';
-    const fieldDetail=Array.isArray(data?.error?.fields)?data.error.fields.map(f=>`${f?.field||''}: ${f?.message||f?.description||''}`).filter(Boolean).join(' | '):'';
-    const err=new Error(`${detail||`Bling HTTP ${r.status}`}${fieldDetail?` — ${fieldDetail}`:''}`); err.statusCode=r.status; err.blingStatus=r.status; throw err;
+    const err=new Error(data?.error?.description || data?.message || `Bling HTTP ${r.status}`); err.statusCode=r.status; throw err;
   }
   return data;
 }
@@ -68,11 +54,6 @@ async function getProduct(id){
 
 async function findOrCreateContact(customer, delivery){
   const cpf=cleanDoc(customer?.cpf);
-  if(!validCPF(cpf)) throw new Error('CPF inválido. Informe um CPF válido para criar o cliente no Bling.');
-  const email=String(customer?.email||'').trim();
-  if(email && !validEmail(email)) throw new Error('E-mail inválido. Informe um e-mail válido para criar o cliente no Bling.');
-  const phone=String(customer?.phone||'').replace(/\D/g,'');
-  if(phone && (phone.length<10 || phone.length>11)) throw new Error('Telefone inválido. Informe um telefone com DDD.');
   let contact=null;
   if(cpf){
     const found=await blingFetch(`/contatos?numeroDocumento=${encodeURIComponent(cpf)}&limite=10`);
@@ -82,27 +63,21 @@ async function findOrCreateContact(customer, delivery){
   if(contact?.id) return contact;
 
   const cityParts=String(delivery?.city||'').split('/');
-  const municipio=String(cityParts[0]||delivery?.city||'').trim();
-  const uf=String(delivery?.uf||cityParts[1]||'').trim().toUpperCase();
-  const cep=String(delivery?.cep||'').replace(/\D/g,'');
-  if(!municipio) throw new Error('Município do cliente não informado.');
-  if(!validUF(uf)) throw new Error('UF do endereço inválida. Informe o estado corretamente, por exemplo: Brasília / DF.');
-  if(cep.length!==8) throw new Error('CEP inválido. Informe um CEP com 8 dígitos.');
   const payload={
     nome:String(customer?.name||'Cliente Relpps').trim(),
     tipoPessoa:'F',
     numeroDocumento:cpf,
-    email,
-    telefone:phone,
+    email:String(customer?.email||'').trim(),
+    telefone:String(customer?.phone||'').replace(/\D/g,''),
     endereco:{
       geral:{
-        endereco:String(delivery?.address||'').trim(),
-        numero:String(delivery?.number||'').trim(),
-        complemento:String(delivery?.complement||'').trim(),
-        bairro:String(delivery?.district||'').trim(),
-        municipio,
-        uf,
-        cep
+        endereco:String(delivery?.address||''),
+        numero:String(delivery?.number||''),
+        complemento:String(delivery?.complement||''),
+        bairro:String(delivery?.district||''),
+        municipio:String(cityParts[0]||delivery?.city||'').trim(),
+        uf:String(cityParts[1]||'').trim(),
+        cep:String(delivery?.cep||'').replace(/\D/g,'')
       }
     }
   };

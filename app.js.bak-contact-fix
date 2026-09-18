@@ -1839,7 +1839,7 @@ async function submitOrder(form){
   const totalsFinal=updateCheckoutTotals();
   const payload={
     status:"Aguardando pagamento",customer:{name:data.name,cpf:data.cpf,email:data.email,phone:data.phone},
-    delivery:{method,cep:data.cep,address:data.address,number:data.number,complement:data.complement,district:data.district,city:data.city,uf:(String(data.city||"").split("/")[1]||"").trim(),shipping:selectedShipping},
+    delivery:{method,cep:data.cep,address:data.address,number:data.number,complement:data.complement,district:data.district,city:data.city,shipping:selectedShipping},
     payment:data.payment,
     items:cart.map(i=>({productId:i.id,name:i.name,quantity:i.qty,unitPrice:i.price,variations:i.variations})),
     totals:totalsFinal,
@@ -2305,31 +2305,8 @@ function setCheckoutStage(stage, scroll=true){
   }
 }
 
-function isValidCPF(value){
-  const cpf=String(value||"").replace(/\D/g,"");
-  if(cpf.length!==11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  let sum=0;
-  for(let i=0;i<9;i++) sum+=Number(cpf[i])*(10-i);
-  let d1=(sum*10)%11; if(d1===10) d1=0;
-  if(d1!==Number(cpf[9])) return false;
-  sum=0;
-  for(let i=0;i<10;i++) sum+=Number(cpf[i])*(11-i);
-  let d2=(sum*10)%11; if(d2===10) d2=0;
-  return d2===Number(cpf[10]);
-}
-
-function isValidCheckoutEmail(value){
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value||"").trim());
-}
-
 function validateCheckoutDataStage(){
-  if(!checkoutRequiredFields(["name","cpf","email","phone"])) return false;
-  const cpf=String($("#cpf")?.value||"").replace(/\D/g,"");
-  if(!isValidCPF(cpf)){ toast("Digite um CPF válido para cadastrar o cliente no Bling."); $("#cpf")?.focus(); return false; }
-  if(!isValidCheckoutEmail($("#email")?.value)){ toast("Digite um e-mail válido."); $("#email")?.focus(); return false; }
-  const phone=String($("#phone")?.value||"").replace(/\D/g,"");
-  if(phone.length<10 || phone.length>11){ toast("Digite um telefone válido com DDD."); $("#phone")?.focus(); return false; }
-  return true;
+  return checkoutRequiredFields(["name","cpf","email","phone"]);
 }
 
 function validateCheckoutReceiveStage(){

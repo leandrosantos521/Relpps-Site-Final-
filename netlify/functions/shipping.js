@@ -11,14 +11,86 @@ function clientId(){return String(process.env.MELHOR_ENVIO_CLIENT_ID||'').trim()
 function clientSecret(){return String(process.env.MELHOR_ENVIO_CLIENT_SECRET||'').trim()}
 function quoteSecret(){return String(process.env.SHIPPING_QUOTE_SECRET||process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim()}
 function signQuote(data){const secret=quoteSecret(); if(!secret)return ''; const payload=Buffer.from(JSON.stringify(data)).toString('base64url'); const sig=crypto.createHmac('sha256',secret).update(payload).digest('base64url'); return `${payload}.${sig}`}
-function isCorreiosQuote(q){const company=String(q?.company||'');const name=String(q?.name||q?.service||'');return /correios/i.test(company)||/correios/i.test(name)}
+function serviceId(q){return String(q?.id??q?.service_id??q?.service??'').trim()}
+function quoteName(q){return String(q?.name||q?.service||'Entrega').trim()}
+function isCorreiosQuote(q){const company=String(q?.company?.name||q?.company||'');const name=quoteName(q);const id=serviceId(q);return /correios/i.test(company)||/correios/i.test(name)||id==='1'||id==='2'}
+function isPacQuote(q){return serviceId(q)==='1'||/^pac(?:\s|$)/i.test(quoteName(q))||/\bpac\b/i.test(quoteName(q))}
+function isSedexQuote(q){return serviceId(q)==='2'||/^sedex(?:\s|$)/i.test(quoteName(q))||/\bsedex\b/i.test(quoteName(q))}
+function normalizeCorreiosQuotes(data){
+  if(!Array.isArray(data)) return [];
+  const out=data.filter(x=>!x?.error&&isCorreiosQuote(x)).map(x=>({
+    id:x.id??x.service_id??x.service,
+    name:quoteName(x),
+    company:x.company?.name||x.company||'Correios',
+    price:Number(x.custom_price??x.price??0),
+    delivery_time:x.custom_delivery_time??x.delivery_time??null,
+    raw:x
+  })).filter(x=>x.price>0);
+  const byId=new Map();
+  for(const q of out){const key=serviceId(q)||`${q.company}|${q.name}`;if(!byId.has(key))byId.set(key,q);}
+  return [...byId.values()].sort((a,b)=>{const ar=isPacQuote(a)?0:isSedexQuote(a)?1:2;const br=isPacQuote(b)?0:isSedexQuote(b)?1:2;return ar-br||Number(a.price)-Number(b.price)});
+}
 function attachToken(q,provider,cep){const expiresAt=Date.now()+15*60*1000; const data={provider,cep,service:q.id||q.service||q.name||'',price:Number(q.price||0),expiresAt,quoteId:q.id||q.quote_id||null}; return {...q,quote_token:signQuote(data),quote_expires_at:expiresAt}}
 function oauthState(){const secret=clientSecret()||quoteSecret(); if(!secret)throw new Error('Configure MELHOR_ENVIO_CLIENT_SECRET no Netlify.'); const raw=`${Date.now()}:${crypto.randomBytes(18).toString('hex')}`; const sig=crypto.createHmac('sha256',secret).update(raw).digest('base64url'); return `${Buffer.from(raw).toString('base64url')}.${sig}`}
 function verifyState(state){try{const [raw64,sig]=String(state||'').split('.');const raw=Buffer.from(raw64,'base64url').toString('utf8');const secret=clientSecret()||quoteSecret();const expected=crypto.createHmac('sha256',secret).update(raw).digest('base64url');if(!crypto.timingSafeEqual(Buffer.from(sig||''),Buffer.from(expected)))return false;const ts=Number(raw.split(':')[0]);return Number.isFinite(ts)&&Date.now()-ts<10*60*1000}catch{return false}}
 async function exchangeCode(code){const body=new URLSearchParams({grant_type:'authorization_code',client_id:clientId(),client_secret:clientSecret(),redirect_uri:callback(),code:String(code)});const r=await fetch(`${base()}/oauth/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data?.message||data?.error||`Melhor Envio OAuth HTTP ${r.status}`);await saveOAuth(data);return data}
 async function refreshToken(refresh){const body=new URLSearchParams({grant_type:'refresh_token',client_id:clientId(),client_secret:clientSecret(),refresh_token:String(refresh)});const r=await fetch(`${base()}/oauth/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data?.message||data?.error||`Melhor Envio refresh HTTP ${r.status}`);return saveOAuth(data)}
 async function accessToken(){if(process.env.MELHOR_ENVIO_TOKEN)return process.env.MELHOR_ENVIO_TOKEN;let stored=null;try{stored=await getOAuth()}catch(e){console.warn('[Melhor Envio OAuth store]',e.message)}if(stored?.access_token && stored.expires_at && Date.now()<new Date(stored.expires_at).getTime()-5*60*1000)return stored.access_token;if(stored?.refresh_token){try{const fresh=await refreshToken(stored.refresh_token);return fresh.access_token}catch(e){console.warn('[Melhor Envio refresh]',e.message)}}throw new Error('Melhor Envio ainda não autorizado. Abra /api/shipping?action=authorize para conectar sua conta.')}
-async function melhorEnvioQuote({cep,items}){const token=await accessToken();const from=cleanCep(process.env.STORE_POSTAL_CODE);if(from.length!==8)throw new Error('STORE_POSTAL_CODE inválido.');const payload={from:{postal_code:from},to:{postal_code:cep},products:items.map(i=>({id:String(i.id),width:Number(i.width)>0?Number(i.width):11,height:Number(i.height)>0?Number(i.height):17,length:Number(i.length)>0?Number(i.length):11,weight:Number(i.weight)>0?Number(i.weight):0.3,insurance_value:Number(i.price)>0?Number(i.price):1,quantity:Number(i.quantity)>0?Number(i.quantity):1})),options:{receipt:false,own_hand:false},services:'1,2,17'};const r=await fetch(`${base()}/api/v2/me/shipment/calculate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body:JSON.stringify(payload)});const data=await r.json().catch(()=>[]);if(!r.ok)throw new Error(data?.message||`Melhor Envio HTTP ${r.status}`);return Array.isArray(data)?data.filter(x=>!x.error).map(x=>({id:x.id,name:x.name||x.service||'Entrega',company:x.company?.name||x.company||'Melhor Envio',price:Number(x.custom_price??x.price??0),delivery_time:x.custom_delivery_time??x.delivery_time??null,raw:x})):[]}
+async function requestCorreiosQuote(token,from,cep,items,services){
+  const payload={from:{postal_code:from},to:{postal_code:cep},products:items.map(i=>({id:String(i.id),width:Number(i.width)>0?Number(i.width):11,height:Number(i.height)>0?Number(i.height):17,length:Number(i.length)>0?Number(i.length):11,weight:Number(i.weight)>0?Number(i.weight):0.3,insurance_value:Number(i.price)>0?Number(i.price):1,quantity:Number(i.quantity)>0?Number(i.quantity):1})),options:{receipt:false,own_hand:false}};
+  if(services) payload.services=services;
+  const r=await fetch(`${base()}/api/v2/me/shipment/calculate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body:JSON.stringify(payload)});
+  const data=await r.json().catch(()=>[]);
+  if(!r.ok)throw new Error(data?.message||`Melhor Envio HTTP ${r.status}`);
+  return data;
+}
+async function listCorreiosServiceIds(token){
+  const r=await fetch(`${base()}/api/v2/me/shipment/services`,{headers:{Authorization:`Bearer ${token}`,Accept:'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'}});
+  const data=await r.json().catch(()=>[]);
+  if(!r.ok)throw new Error(data?.message||`Melhor Envio serviços HTTP ${r.status}`);
+  const list=Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
+  const wanted=list.filter(s=>{
+    const company=String(s?.company?.name||s?.company||'');
+    const name=String(s?.name||s?.service||'');
+    return /correios/i.test(company) && /^(pac|sedex|mini\s*envios)(?:\b|\s)/i.test(name.trim());
+  });
+  const ids=[...new Set(wanted.map(s=>String(s?.id||s?.service_id||'').trim()).filter(Boolean))];
+  return {ids,wanted};
+}
+async function melhorEnvioQuote({cep,items}){
+  const token=await accessToken();
+  const from=cleanCep(process.env.STORE_POSTAL_CODE);
+  if(from.length!==8)throw new Error('STORE_POSTAL_CODE inválido.');
+
+  // A API atual permite listar os serviços disponíveis e recomenda não assumir IDs
+  // fixos, pois eles podem mudar. Procuramos PAC, SEDEX e Mini Envios da Correios
+  // habilitados na conta e cotamos exatamente esses serviços.
+  let services='1,2';
+  try{
+    const discovered=await listCorreiosServiceIds(token);
+    if(discovered.ids.length) services=discovered.ids.join(',');
+  }catch(e){
+    console.warn('[Melhor Envio] Não foi possível listar serviços; usando PAC/SEDEX padrão:',e.message);
+  }
+
+  let data=await requestCorreiosQuote(token,from,cep,items,services);
+  let quotes=normalizeCorreiosQuotes(data).filter(q=>{
+    const name=quoteName(q);
+    return isPacQuote(q)||isSedexQuote(q)||/mini\s*envios/i.test(name);
+  });
+
+  // Se a listagem dinâmica não retornou o PAC, fazemos uma tentativa isolada.
+  if(!quotes.some(isPacQuote)){
+    try{
+      const pacData=await requestCorreiosQuote(token,from,cep,items,'1');
+      quotes=normalizeCorreiosQuotes([...(Array.isArray(data)?data:[]),...(Array.isArray(pacData)?pacData:[])]).filter(q=>{
+        const name=quoteName(q);
+        return isPacQuote(q)||isSedexQuote(q)||/mini\s*envios/i.test(name);
+      });
+    }catch(e){console.warn('[Melhor Envio] PAC isolado indisponível:',e.message);}
+  }
+  return quotes;
+}
 async function authorize(event){if(!clientId()||!clientSecret())return json(500,{message:'Configure MELHOR_ENVIO_CLIENT_ID e MELHOR_ENVIO_CLIENT_SECRET no Netlify.'});const state=oauthState();const scope='shipping-calculate ecommerce-shipping';const url=`${base()}/oauth/authorize?${new URLSearchParams({client_id:clientId(),redirect_uri:callback(),response_type:'code',state,scope})}`;return{statusCode:302,headers:{Location:url,'Cache-Control':'no-store'},body:''}}
 async function oauthCallback(event){let body={};try{body=JSON.parse(event.body||'{}')}catch{}const qs=event.queryStringParameters||{};const code=body.code||qs.code;const state=body.state||qs.state;const error=body.error||qs.error;if(error)return json(400,{ok:false,message:body.error_description||qs.error_description||error});if(!code||!state)return json(400,{ok:false,message:'code/state ausentes.'});if(!verifyState(state))return json(400,{ok:false,message:'state inválido ou expirado. Inicie a autorização novamente.'});const data=await exchangeCode(code);return json(200,{ok:true,expires_in:data.expires_in,scope:data.scope||'shipping-calculate ecommerce-shipping'});}
-exports.handler=async(event)=>{try{const action=event.queryStringParameters?.action||'';if(action==='authorize')return authorize(event);if(action==='oauth-callback')return oauthCallback(event);if(event.httpMethod!=='POST')return json(405,{message:'Método não permitido'});const body=JSON.parse(event.body||'{}');const cep=cleanCep(body.cep);const items=Array.isArray(body.items)?body.items:[];if(cep.length!==8)return json(400,{message:'CEP inválido.'});if(!items.length)return json(400,{message:'Carrinho vazio.'});if(process.env.CHECKOUT_TEST_MODE==='true'||process.env.SHIPPING_TEST_MODE==='true')return json(200,{melhor_envio:[],uber:null,testMode:true,message:'Modo de teste ativo. Configure as credenciais reais para cotação.'});let melhor=[];let melhorErro=null;let uber=null;try{melhor=(await melhorEnvioQuote({cep,items})||[]).filter(isCorreiosQuote).filter(x=>Number(x.price||0)>0);}catch(e){melhorErro=e;console.error('Melhor Envio',e);}try{uber=await uberQuote({delivery:{cep,address:body.address,number:body.number,complement:body.complement,district:body.district,city:body.city,uf:body.uf},subtotal:Number(body.subtotal)||0})}catch(e){console.error('Uber Direct',e);}melhor=melhor.map(q=>attachToken(q,'melhor_envio',cep));if(uber)uber=attachToken(uber,'uber',cep);return json(200,{melhor_envio:melhor,melhor_envio_error:melhorErro?.message||null,uber,testMode:false,quoted_at:new Date().toISOString(),providers:{melhor_envio:melhor.length>0,uber:Boolean(uber)}})}catch(e){return json(500,{message:e.message||'Erro ao calcular frete.'})}};
+exports.handler=async(event)=>{try{const action=event.queryStringParameters?.action||'';if(action==='authorize')return authorize(event);if(action==='oauth-callback')return oauthCallback(event);if(event.httpMethod!=='POST')return json(405,{message:'Método não permitido'});const body=JSON.parse(event.body||'{}');const cep=cleanCep(body.cep);const items=Array.isArray(body.items)?body.items:[];if(cep.length!==8)return json(400,{message:'CEP inválido.'});if(!items.length)return json(400,{message:'Carrinho vazio.'});if(process.env.CHECKOUT_TEST_MODE==='true'||process.env.SHIPPING_TEST_MODE==='true')return json(200,{melhor_envio:[],uber:null,testMode:true,message:'Modo de teste ativo. Configure as credenciais reais para cotação.'});let melhor=[];let melhorErro=null;let uber=null;try{melhor=(await melhorEnvioQuote({cep,items})||[]).filter(x=>Number(x.price||0)>0);}catch(e){melhorErro=e;console.error('Melhor Envio',e);}try{uber=await uberQuote({delivery:{cep,address:body.address,number:body.number,complement:body.complement,district:body.district,city:body.city,uf:body.uf},subtotal:Number(body.subtotal)||0})}catch(e){console.error('Uber Direct',e);}melhor=melhor.map(q=>attachToken(q,'melhor_envio',cep));if(uber)uber=attachToken(uber,'uber',cep);return json(200,{melhor_envio:melhor,melhor_envio_error:melhorErro?.message||null,uber,testMode:false,quoted_at:new Date().toISOString(),providers:{melhor_envio:melhor.length>0,uber:Boolean(uber)}})}catch(e){return json(500,{message:e.message||'Erro ao calcular frete.'})}};
