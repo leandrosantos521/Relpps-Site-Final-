@@ -1,0 +1,48 @@
+RELPPS — CONFIGURAÇÃO DO DOMÍNIO DE PRODUÇÃO
+
+DOMÍNIO
+https://relppscosmetic.netlify.app
+
+BLING_REDIRECT_URI=https://relppscosmetic.netlify.app/bling-callback.html
+MELHOR_ENVIO_CALLBACK_URL=https://relppscosmetic.netlify.app/melhor-envio-callback.html
+INFINITEPAY_WEBHOOK=https://relppscosmetic.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook
+HEALTH=https://relppscosmetic.netlify.app/api/health
+
+VALORES CONHECIDOS
+PUBLIC_SITE_URL=https://relppscosmetic.netlify.app
+INFINITEPAY_HANDLE=rps210323
+CHECKOUT_TEST_MODE=false
+BLING_CREATE_ORDERS=true
+MELHOR_ENVIO_SANDBOX=false
+UBER_DIRECT_ENABLED=true
+STORE_POSTAL_CODE=72010901
+STORE_PICKUP_ADDRESS=C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901
+SUPABASE_URL=https://wsoetvctzybsdtsuydca.supabase.co
+
+SEGREDOS INTERNOS GERADOS AGORA
+SHIPPING_QUOTE_SECRET=mM9X5UyuWtg50K_UuF0fQc8PnqdlKtUarY4YxdBxJdU
+RELPPS_ADMIN_RELEASE_SECRET=Gmqobo7PsHfY2zGVEXYEFwYMC3LoyUdAqQ1KCC_rhM4
+BLING_OAUTH_STATE_SECRET=S7thzEznkHxYUy22Wt0eNJOBXDLXYvt4efTM9UFTLxc
+
+CREDENCIAIS QUE VOCÊ DEVE COPIAR DOS PAINÉIS (NÃO ENVIE NO CHAT)
+BLING_CLIENT_ID=<Client ID do app Bling>
+BLING_CLIENT_SECRET=<Client Secret do app Bling>
+SUPABASE_SERVICE_ROLE_KEY=<Service Role Key do Supabase>
+MELHOR_ENVIO_CLIENT_ID=<Client ID do Melhor Envio>
+MELHOR_ENVIO_CLIENT_SECRET=<Client Secret do Melhor Envio>
+UBER_DIRECT_CUSTOMER_ID=<Customer ID do Uber Direct>
+UBER_DIRECT_CLIENT_ID=<Client ID do Uber Direct>
+UBER_DIRECT_CLIENT_SECRET=<Client Secret do Uber Direct>
+
+ORDEM
+1) Netlify > Project configuration > Environment variables
+2) Adicione/atualize os valores
+3) Faça deploy
+4) Abra /api/health
+5) Autorize Bling em /bling-connect.html
+6) Autorize Melhor Envio em /conectar-melhor-envio.html
+7) Faça um pedido real de teste com 1 produto
+8) Confira Bling > Vendas > Pedidos de Venda
+9) Depois teste Uber Direct + InfinitePay
+
+Nunca coloque Client Secret, Service Role Key, tokens ou senhas no código público.

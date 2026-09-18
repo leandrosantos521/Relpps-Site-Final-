@@ -19,7 +19,7 @@ O Mini Envios só aparece se o Melhor Envio devolver uma cotação válida para 
 
 - `MELHOR_ENVIO_CLIENT_ID`
 - `MELHOR_ENVIO_CLIENT_SECRET`
-- `MELHOR_ENVIO_CALLBACK_URL=https://relppscosmetico.netlify.app/melhor-envio-callback.html`
+- `MELHOR_ENVIO_CALLBACK_URL=https://relppscosmetic.netlify.app/melhor-envio-callback.html`
 - `MELHOR_ENVIO_TOKEN` (se usado; a conexão OAuth também pode armazenar o token no Supabase)
 - `STORE_POSTAL_CODE=72010901`
 - `INFINITEPAY_HANDLE=rps210323`

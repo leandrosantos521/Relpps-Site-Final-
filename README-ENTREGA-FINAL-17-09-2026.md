@@ -68,7 +68,9 @@ O webhook verifica a assinatura HMAC e, quando encontra um pedido Relpps de Uber
 ## 4. Fluxos
 
 ### Correios / Melhor Envio
-Cliente informa CEP → site consulta Melhor Envio → somente opções dos Correios são exibidas → cliente escolhe PAC/SEDEX → cria pedido → checkout InfinitePay com produto + frete.
+Cliente informa CEP → site consulta Melhor Envio → **somente Correios PAC e Correios SEDEX** são solicitados/exibidos → PAC fica priorizado na lista → cliente escolhe a modalidade → cria pedido → checkout InfinitePay com produto + frete.
+
+Na API atual do Melhor Envio, os serviços usados aqui são `1 = PAC` e `2 = SEDEX`. O código não solicita Mini Envios (`17`) nem transportadoras privadas. Se o retorno combinado vier sem PAC, o site faz uma segunda tentativa somente para o serviço `1`; ele só exibe o PAC se a API devolver uma cotação válida, sem inventar preço. citeturn0search1turn0search3
 
 ### Uber / 99
 Cliente escolhe Uber/99 → cria pedido sem pagamento → pedido entra no Bling com frete a calcular → loja lança o valor em **Transporte → Frete** → webhook atualiza o total → site libera o botão de pagamento com produto + frete.
