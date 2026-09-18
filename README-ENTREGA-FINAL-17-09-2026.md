@@ -11,7 +11,7 @@ Em **Netlify → Site configuration → Environment variables**, cadastre:
 ```text
 CHECKOUT_TEST_MODE=false
 BLING_CREATE_ORDERS=true
-PUBLIC_SITE_URL=https://relppscosmetico.netlify.app
+PUBLIC_SITE_URL=https://relppscosmetic.netlify.app
 STORE_POSTAL_CODE=72010901
 STORE_PICKUP_ADDRESS=C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901
 INFINITEPAY_HANDLE=rps210323
@@ -20,11 +20,11 @@ SUPABASE_SERVICE_ROLE_KEY=COLE_AQUI_A_SERVICE_ROLE_DO_SUPABASE
 BLING_CLIENT_ID=COLE_AQUI
 BLING_CLIENT_SECRET=COLE_AQUI
 BLING_REFRESH_TOKEN=DEIXE_VAZIO_SE_VAI_CONECTAR_PELA_TELA_OAUTH
-BLING_REDIRECT_URI=https://relppscosmetico.netlify.app/bling-callback.html
+BLING_REDIRECT_URI=https://relppscosmetic.netlify.app/bling-callback.html
 BLING_OAUTH_STATE_SECRET=CRIE_UMA_SENHA_FORTE_E_UNICA
 MELHOR_ENVIO_CLIENT_ID=COLE_AQUI
 MELHOR_ENVIO_CLIENT_SECRET=COLE_AQUI
-MELHOR_ENVIO_CALLBACK_URL=https://relppscosmetico.netlify.app/melhor-envio-callback.html
+MELHOR_ENVIO_CALLBACK_URL=https://relppscosmetic.netlify.app/melhor-envio-callback.html
 MELHOR_ENVIO_TOKEN=DEIXE_VAZIO_SE_USAR_OAUTH
 MELHOR_ENVIO_SANDBOX=false
 MELHOR_ENVIO_USER_AGENT=Relpps Cosméticos (contato@relpps.com.br)
@@ -51,26 +51,24 @@ No aplicativo Relpps, deixe os escopos necessários habilitados. Como você já 
 
 Depois de salvar os escopos, faça a autorização novamente por:
 
-`https://relppscosmetico.netlify.app/api/bling?action=authorize`
+`https://relppscosmetic.netlify.app/api/bling?action=authorize`
 
 Callback cadastrado no Bling:
 
-`https://relppscosmetico.netlify.app/bling-callback.html`
+`https://relppscosmetic.netlify.app/bling-callback.html`
 
 ### Webhook automático do frete Uber
 
 No Bling → Webhooks → Pedido de Venda → **Atualizado**, use:
 
-`https://relppscosmetico.netlify.app/.netlify/functions/bling-webhook-background`
+`https://relppscosmetic.netlify.app/.netlify/functions/bling-webhook-background`
 
 O webhook verifica a assinatura HMAC e, quando encontra um pedido Relpps de Uber com `transporte.frete > 0`, lê o pedido completo, calcula o total final e libera o checkout InfinitePay.
 
 ## 4. Fluxos
 
 ### Correios / Melhor Envio
-Cliente informa CEP → site consulta Melhor Envio → **somente Correios PAC e Correios SEDEX** são solicitados/exibidos → PAC fica priorizado na lista → cliente escolhe a modalidade → cria pedido → checkout InfinitePay com produto + frete.
-
-Na API atual do Melhor Envio, os serviços usados aqui são `1 = PAC` e `2 = SEDEX`. O código não solicita Mini Envios (`17`) nem transportadoras privadas. Se o retorno combinado vier sem PAC, o site faz uma segunda tentativa somente para o serviço `1`; ele só exibe o PAC se a API devolver uma cotação válida, sem inventar preço. citeturn0search1turn0search3
+Cliente informa CEP → site consulta Melhor Envio → somente opções dos Correios são exibidas → cliente escolhe PAC/SEDEX → cria pedido → checkout InfinitePay com produto + frete.
 
 ### Uber / 99
 Cliente escolhe Uber/99 → cria pedido sem pagamento → pedido entra no Bling com frete a calcular → loja lança o valor em **Transporte → Frete** → webhook atualiza o total → site libera o botão de pagamento com produto + frete.
@@ -81,7 +79,7 @@ O site também mantém `/liberar-pedido.html` como caminho manual de contingênc
 
 Após publicar, abra:
 
-`https://relppscosmetico.netlify.app/api/health`
+`https://relppscosmetic.netlify.app/api/health`
 
 O endpoint retorna somente estados booleanos e avisos; não retorna chaves secretas.
 

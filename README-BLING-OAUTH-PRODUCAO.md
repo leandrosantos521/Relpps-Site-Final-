@@ -4,14 +4,14 @@
 
 Use exatamente:
 
-`https://relppscosmetico.netlify.app/bling-callback.html`
+`https://relppscosmetic.netlify.app/bling-callback.html`
 
 ## Variáveis Netlify
 
 - `BLING_CLIENT_ID`
 - `BLING_CLIENT_SECRET`
 - `BLING_REFRESH_TOKEN` (fallback inicial)
-- `BLING_REDIRECT_URI=https://relppscosmetico.netlify.app/bling-callback.html`
+- `BLING_REDIRECT_URI=https://relppscosmetic.netlify.app/bling-callback.html`
 - `BLING_OAUTH_STATE_SECRET` (uma chave forte escolhida por você)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -23,6 +23,6 @@ Antes de testar, execute o bloco de OAuth do arquivo `supabase-schema.sql` no Su
 
 ## URL obrigatória no aplicativo Bling
 
-Cadastre exatamente: `https://relppscosmetico.netlify.app/bling-callback.html`
+Cadastre exatamente: `https://relppscosmetic.netlify.app/bling-callback.html`
 
 O fluxo de autorização deste ZIP não envia `redirect_uri` na URL de authorize; o Bling usa a URL cadastrada no aplicativo, conforme a documentação oficial.

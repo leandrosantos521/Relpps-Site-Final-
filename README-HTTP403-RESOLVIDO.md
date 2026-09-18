@@ -18,7 +18,7 @@ Como você acabou de alterar os escopos do aplicativo no Bling, é necessário a
 
 Abra:
 
-`https://relppscosmetico.netlify.app/api/bling?action=repair`
+`https://relppscosmetic.netlify.app/api/bling?action=repair`
 
 Autorize o aplicativo e volte para a loja.
 

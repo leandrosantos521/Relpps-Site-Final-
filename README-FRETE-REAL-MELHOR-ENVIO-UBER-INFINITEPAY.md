@@ -13,7 +13,7 @@ Esta versão calcula frete real no backend, após o CEP ser informado, e leva pa
 `STORE_PICKUP_DISTRICT=Taguatinga Centro`
 `STORE_PICKUP_CITY=Brasília / DF`
 `STORE_PICKUP_PHONE=+5561996498557`
-`PUBLIC_SITE_URL=https://relppscosmetico.netlify.app`
+`PUBLIC_SITE_URL=https://relppscosmetic.netlify.app`
 `INFINITEPAY_HANDLE=rps210323`
 
 ## 2. Melhor Envio

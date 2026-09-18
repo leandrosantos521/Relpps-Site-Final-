@@ -12,4 +12,4 @@ A loja agora:
 
 As variáveis `BLING_CLIENT_ID`, `BLING_CLIENT_SECRET` e `BLING_REFRESH_TOKEN` devem estar configuradas no Netlify. O arquivo `.env` não deve ser publicado.
 
-Domínio de produção configurado: `https://relppscosmetico.netlify.app`
+Domínio de produção configurado: `https://relppscosmetic.netlify.app`

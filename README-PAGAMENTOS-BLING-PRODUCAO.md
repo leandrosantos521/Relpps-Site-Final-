@@ -31,7 +31,7 @@ Configure como Environment Variables/Secrets:
 - `INFINITEPAY_HANDLE`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `PUBLIC_SITE_URL=https://relppscosmetico.netlify.app`
+- `PUBLIC_SITE_URL=https://relppscosmetic.netlify.app`
 - `STORE_PICKUP_ADDRESS=...`
 - `CHECKOUT_TEST_MODE=false`
 

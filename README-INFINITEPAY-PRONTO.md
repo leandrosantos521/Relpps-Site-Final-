@@ -15,13 +15,13 @@ Esta versão corrige o fluxo de compra para:
 ## Variáveis obrigatórias no Netlify
 
 ```text
-PUBLIC_SITE_URL=https://relppscosmetico.netlify.app
+PUBLIC_SITE_URL=https://relppscosmetic.netlify.app
 CHECKOUT_TEST_MODE=false
 BLING_CREATE_ORDERS=true
 
 BLING_CLIENT_ID=SEU_CLIENT_ID
 BLING_CLIENT_SECRET=SEU_CLIENT_SECRET
-BLING_REDIRECT_URI=https://relppscosmetico.netlify.app/bling-callback.html
+BLING_REDIRECT_URI=https://relppscosmetic.netlify.app/bling-callback.html
 BLING_OAUTH_STATE_SECRET=UMA_SENHA_ALEATORIA_FORTE
 
 INFINITEPAY_HANDLE=rps210323
@@ -43,7 +43,7 @@ O código usa:
 
 - `POST https://api.checkout.infinitepay.io/links`
 - `POST https://api.checkout.infinitepay.io/payment_check`
-- webhook: `https://relppscosmetico.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook`
+- webhook: `https://relppscosmetic.netlify.app/.netlify/functions/checkout?action=infinitepay-webhook`
 
 O `handle` deve ser sua InfiniteTag sem `$`.
 
@@ -56,7 +56,7 @@ O checkout não depende mais da existência imediata de `public.relpps_orders`. 
 O callback precisa estar cadastrado exatamente como:
 
 ```text
-https://relppscosmetico.netlify.app/bling-callback.html
+https://relppscosmetic.netlify.app/bling-callback.html
 ```
 
 Sem `/` no final e sem usar o domínio antigo com um único `s`.
