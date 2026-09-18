@@ -2317,12 +2317,33 @@ function isValidCheckoutEmail(value){
 }
 
 function validateCheckoutDataStage(){
+  const form=$("#checkoutForm");
+  if(!form) return false;
   if(!checkoutRequiredFields(["name","cpf","email","phone"])) return false;
-  const cpf=String($("#cpf")?.value||"").replace(/\D/g,"");
-  if(!isValidCPF(cpf)){ toast("Digite um CPF válido para cadastrar o cliente no Bling."); $("#cpf")?.focus(); return false; }
-  if(!isValidCheckoutEmail($("#email")?.value)){ toast("Digite um e-mail válido."); $("#email")?.focus(); return false; }
-  const phone=String($("#phone")?.value||"").replace(/\D/g,"");
-  if(phone.length<10 || phone.length>11){ toast("Digite um telefone válido com DDD."); $("#phone")?.focus(); return false; }
+
+  // IMPORTANTE: esses campos usam name= no checkout (não id=).
+  // O código antigo procurava #cpf/#email/#phone e, como esses IDs não existem,
+  // lia uma string vazia e bloqueava até um CPF perfeitamente válido.
+  const cpfField=form.elements.namedItem("cpf");
+  const emailField=form.elements.namedItem("email");
+  const phoneField=form.elements.namedItem("phone");
+  const cpf=String(cpfField?.value||"").replace(/\D/g,"");
+  if(!isValidCPF(cpf)){
+    toast("Digite um CPF válido para cadastrar o cliente no Bling.");
+    cpfField?.focus();
+    return false;
+  }
+  if(!isValidCheckoutEmail(emailField?.value)){
+    toast("Digite um e-mail válido.");
+    emailField?.focus();
+    return false;
+  }
+  const phone=String(phoneField?.value||"").replace(/\D/g,"");
+  if(phone.length<10 || phone.length>11){
+    toast("Digite um telefone válido com DDD.");
+    phoneField?.focus();
+    return false;
+  }
   return true;
 }
 
