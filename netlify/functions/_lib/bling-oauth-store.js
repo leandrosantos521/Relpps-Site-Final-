@@ -1,7 +1,8 @@
 const TABLE = 'relpps_bling_oauth';
-function config(){return {url:String(process.env.SUPABASE_URL||'').replace(/\/$/,''),key:process.env.SUPABASE_SERVICE_ROLE_KEY||''};}
+function config(){return {url:String(process.env.SUPABASE_URL||'').replace(/\/$/,''),key:String(process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim()};}
+function assertConfigured(){const {url,key}=config(); if(!url||!key){const e=new Error('Supabase não está configurado no Netlify para guardar a conexão do Bling.'); e.code='SUPABASE_CONNECTION_REQUIRED'; e.statusCode=500; throw e;} return {url,key};}
 async function request(path, options={}){
-  const {url,key}=config(); if(!url||!key) return null;
+  const {url,key}=assertConfigured();
   const r=await fetch(`${url}/rest/v1/${path}`,{...options,headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'return=representation',...(options.headers||{})}});
   const text=await r.text(); let data=null; try{data=JSON.parse(text)}catch{}
   if(!r.ok) throw new Error(data?.message||data?.error_description||text||`Supabase HTTP ${r.status}`); return data;

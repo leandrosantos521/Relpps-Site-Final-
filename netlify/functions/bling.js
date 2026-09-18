@@ -10,7 +10,7 @@ function json(statusCode, body, headers={}) {
   };
 }
 
-function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmeticoss.netlify.app").replace(/\/$/,""); }
+function publicSiteUrl(){ return String(process.env.PUBLIC_SITE_URL || "https://relppscosmetico.netlify.app").replace(/\/$/,""); }
 function redirectUri(){ return process.env.BLING_REDIRECT_URI || `${publicSiteUrl()}/bling-callback.html`; }
 function oauthSecret(){ return process.env.BLING_OAUTH_STATE_SECRET || process.env.BLING_CLIENT_SECRET || ""; }
 function signState(payload){
@@ -27,14 +27,14 @@ function verifyState(state){
 }
 async function refreshAccessToken(refresh){
   const clientId=process.env.BLING_CLIENT_ID, clientSecret=process.env.BLING_CLIENT_SECRET;
-  if(!refresh||!clientId||!clientSecret) throw new Error("BLING_CLIENT_ID/BLING_CLIENT_SECRET/BLING_REFRESH_TOKEN não configurados.");
+  if(!refresh||!clientId||!clientSecret){ const e=new Error("Bling ainda não está conectado. Conecte sua conta do Bling para continuar."); e.statusCode=409; e.code="BLING_CONNECTION_REQUIRED"; e.reconnectUrl="/api/bling?action=authorize"; throw e; }
   const basic=Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
   const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:refresh});
   const r=await fetch(`${BLING_BASE}/oauth/token`,{method:"POST",headers:{Authorization:`Basic ${basic}`,"Content-Type":"application/x-www-form-urlencoded",Accept:"application/json","enable-jwt":"1"},body});
   const data=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(data?.error?.description||data?.message||`Bling OAuth HTTP ${r.status}`);
   data.saved_at=new Date().toISOString(); if(data.expires_in) data.expires_at=new Date(Date.now()+Number(data.expires_in)*1000).toISOString();
-  try { await saveBlingOAuth(data); } catch(e) { console.warn("Falha ao salvar token Bling no Supabase:",e.message); }
+  await saveBlingOAuth(data);
   return data.access_token;
 }
 async function tokenFromRefresh(){
@@ -53,6 +53,7 @@ async function exchangeAuthorizationCode(code){
   const r=await fetch(`${BLING_BASE}/oauth/token`,{method:"POST",headers:{Authorization:`Basic ${basic}`,"Content-Type":"application/x-www-form-urlencoded",Accept:"application/json","enable-jwt":"1"},body});
   const data=await r.json().catch(()=>({}));
   if(!r.ok) throw new Error(data?.error?.description||data?.message||`Bling OAuth HTTP ${r.status}`);
+  if(!data.access_token || !data.refresh_token) throw new Error('O Bling não devolveu access_token e refresh_token. Faça a autorização novamente.');
   data.saved_at=new Date().toISOString(); if(data.expires_in) data.expires_at=new Date(Date.now()+Number(data.expires_in)*1000).toISOString();
   await saveBlingOAuth(data); return data;
 }
@@ -130,10 +131,10 @@ async function proxyBlingImage(rawUrl){
   // CDN de imagens não deve compartilhar o limitador da API REST (3 req/s).
   // Isso deixava dezenas de imagens esperando em fila e tornava a vitrine lenta.
   // Tentamos primeiro sem token e, somente se o CDN exigir autenticação, com Bearer.
-  let response=await fetch(target,{headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmeticoss.netlify.app/'},redirect:'follow'});
+  let response=await fetch(target,{headers:{Accept:'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmetico.netlify.app/'},redirect:'follow'});
   if((response.status===401||response.status===403)){
     const token=await tokenFromRefresh();
-    response=await fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmeticoss.netlify.app/'},redirect:'follow'});
+    response=await fetch(target,{headers:{Authorization:`Bearer ${token}`,Accept:'image/*,*/*;q=0.8','User-Agent':'Relpps-Catalog/2.0','Referer':'https://relppscosmetico.netlify.app/'},redirect:'follow'});
   }
   if(!response.ok) throw new Error(`Imagem HTTP ${response.status}`);
   const type=String(response.headers.get('content-type')||'').toLowerCase();
@@ -229,7 +230,7 @@ exports.handler = async (event) => {
       // O Bling usa a URL cadastrada no aplicativo quando redirect_uri não é enviado.
       // Isso evita falhas por diferença de barra final, protocolo ou domínio entre
       // o cadastro do app e a URL enviada no authorize.
-      // A URL esperada no cadastro é: https://relppscosmeticoss.netlify.app/bling-callback.html
+      // A URL esperada no cadastro é: https://relppscosmetico.netlify.app/bling-callback.html
       return {statusCode:302,headers:{Location:u.toString(),"Cache-Control":"no-store"},body:""};
     }
 
@@ -245,12 +246,11 @@ exports.handler = async (event) => {
     if(action==="disconnect") { try { await clearBlingOAuth(); } catch(e) { console.warn("Falha ao limpar OAuth:",e.message); } return json(200,{ok:true,connected:false}); }
 
     if(action==="status") {
-      let connected=false;
-      try {
-        const stored=await getBlingOAuth();
-        connected=Boolean(process.env.BLING_ACCESS_TOKEN || stored?.access_token || process.env.BLING_REFRESH_TOKEN);
-      } catch(e) { connected=Boolean(process.env.BLING_ACCESS_TOKEN || process.env.BLING_REFRESH_TOKEN); }
-      return json(200,{ok:true,connected,oauthRedirect:redirectUri(),authorizeUrl:`${publicSiteUrl()}/api/bling?action=authorize`});
+      let stored=null, storageConfigured=Boolean(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY);
+      try { stored=await getBlingOAuth(); } catch(e) { console.warn('[Bling status] OAuth store:',e.message); }
+      const oauthSaved=Boolean(stored?.refresh_token);
+      const connected=Boolean(process.env.BLING_ACCESS_TOKEN || process.env.BLING_REFRESH_TOKEN || oauthSaved);
+      return json(200,{ok:true,connected,storageConfigured,oauthSaved,clientConfigured:Boolean(process.env.BLING_CLIENT_ID&&process.env.BLING_CLIENT_SECRET),oauthRedirect:redirectUri(),authorizeUrl:`${publicSiteUrl()}/api/bling?action=authorize`});
     }
 
     if(action==="image"){

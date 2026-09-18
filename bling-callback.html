@@ -34,7 +34,7 @@
   const finalState=state||stateFromHash;
   if(!finalCode||!finalState){
     spinner.style.display='none'; title.textContent='Não foi possível conectar'; message.className='error'; message.textContent='O Bling voltou para o callback sem code/state. Confira no aplicativo Bling se a URL de redirecionamento está EXATAMENTE como abaixo e tente novamente.';
-    const pre=document.createElement('div'); pre.style='margin-top:16px;padding:14px;background:#f7f3ec;border:1px solid #e6ddd0;font-size:13px;line-height:1.5;word-break:break-all'; pre.textContent='https://relppscosmeticoss.netlify.app/bling-callback.html'; document.querySelector('.box').appendChild(pre);
+    const pre=document.createElement('div'); pre.style='margin-top:16px;padding:14px;background:#f7f3ec;border:1px solid #e6ddd0;font-size:13px;line-height:1.5;word-break:break-all'; pre.textContent='https://relppscosmetico.netlify.app/bling-callback.html'; document.querySelector('.box').appendChild(pre);
     return;
   }
   try{

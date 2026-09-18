@@ -28,9 +28,9 @@ RELPPS — AJUSTES FINAIS
 
 IMPORTANTE — NETLIFY/Bling:
 Se o aplicativo Bling teve escopos alterados, faça uma nova autorização em:
-https://relppscosmeticoss.netlify.app/bling-connect.html
+https://relppscosmetico.netlify.app/bling-connect.html
 
 Callback do Bling:
-https://relppscosmeticoss.netlify.app/bling-callback.html
+https://relppscosmetico.netlify.app/bling-callback.html
 
 Não coloque secrets no ZIP ou no frontend.

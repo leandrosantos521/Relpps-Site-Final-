@@ -14,8 +14,9 @@ async function supabaseTableExists(table){
 }
 
 exports.handler=async()=>{
-  let oauth=null;
+  let oauth=null; let shippingOAuth=null;
   try{oauth=await getBlingOAuth();}catch{}
+  try{const {getOAuth}=require('./_lib/melhor-envio-oauth-store');shippingOAuth=await getOAuth();}catch{}
   const blingCredentials=Boolean(process.env.BLING_CLIENT_ID&&process.env.BLING_CLIENT_SECRET);
   const blingToken=Boolean(process.env.BLING_ACCESS_TOKEN||process.env.BLING_REFRESH_TOKEN||oauth?.access_token||oauth?.refresh_token);
   const checks={
@@ -25,7 +26,7 @@ exports.handler=async()=>{
     blingPaidSituation:Boolean(process.env.BLING_SITUACAO_PAGO_ID),
     infinitePay:Boolean(String(process.env.INFINITEPAY_HANDLE||'rps210323').trim()),
     supabase:Boolean(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY),
-    shipping:Boolean(process.env.MELHOR_ENVIO_TOKEN&&String(process.env.STORE_POSTAL_CODE||'').replace(/\D/g,'').length===8),
+    shipping:Boolean((process.env.MELHOR_ENVIO_TOKEN||shippingOAuth?.access_token||shippingOAuth?.refresh_token)&&String(process.env.STORE_POSTAL_CODE||'').replace(/\D/g,'').length===8),
     production:process.env.CHECKOUT_TEST_MODE==='false',
     publicSite:Boolean(process.env.PUBLIC_SITE_URL),
     relppsOrders:false,
