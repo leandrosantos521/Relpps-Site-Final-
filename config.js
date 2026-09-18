@@ -22,7 +22,7 @@ window.RELPPS_CONFIG = {
   DELIVERY_FEE: 0,
 
   // Onde o cliente pode retirar presencialmente.
-  PICKUP_LABEL: "Retirada presencial — C 12, AE 02, Loja 30, Taguatinga Centro",
+  PICKUP_LABEL: "Retirada presencial — endereço informado pela loja",
 
   // Chaves de categoria usadas para reconhecer colas.
   GLUE_KEYWORDS: ["cola", "colas"]

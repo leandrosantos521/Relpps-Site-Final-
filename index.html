@@ -10,13 +10,13 @@
   <meta property="og:locale" content="pt_BR">
   <meta property="og:title" content="Relpps Cosméticos | Beleza profissional">
   <meta property="og:description" content="Produtos selecionados para profissionais. Unhas, cílios, sobrancelhas e equipamentos.">
-  <meta property="og:url" content="https://relppscosmetico.netlify.app/">
-  <meta property="og:image" content="https://relppscosmetico.netlify.app/assets/relpps-logo-completa.png">
+  <meta property="og:url" content="https://relppscosmetic.netlify.app/">
+  <meta property="og:image" content="https://relppscosmetic.netlify.app/assets/relpps-logo-completa.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Relpps Cosméticos | Beleza profissional">
   <meta name="twitter:description" content="Cosméticos e produtos profissionais selecionados para você.">
-  <meta name="twitter:image" content="https://relppscosmetico.netlify.app/assets/relpps-logo-completa.png">
-  <link rel="canonical" href="https://relppscosmetico.netlify.app/">
+  <meta name="twitter:image" content="https://relppscosmetic.netlify.app/assets/relpps-logo-completa.png">
+  <link rel="canonical" href="https://relppscosmetic.netlify.app/">
   <title>Relpps Cosméticos | Cosméticos Profissionais Online</title>
   <link rel="icon" href="./assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,9 +27,9 @@
     "@context":"https://schema.org",
     "@type":"Store",
     "name":"Relpps Cosméticos",
-    "url":"https://relppscosmetico.netlify.app/",
+    "url":"https://relppscosmetic.netlify.app/",
     "description":"Loja online de cosméticos e produtos profissionais para unhas, cílios, sobrancelhas e equipamentos.",
-    "image":"https://relppscosmetico.netlify.app/assets/relpps-logo-completa.png",
+    "image":"https://relppscosmetic.netlify.app/assets/relpps-logo-completa.png",
     "priceRange":"$$",
     "currenciesAccepted":"BRL",
     "paymentAccepted":"Pix, Cartão, Dinheiro para retirada presencial",
@@ -475,10 +475,10 @@
         </section>
         <aside class="cart-page-summary-card">
           <h2>Frete</h2>
-          <p class="cart-page-helper">Digite seu CEP para calcular <b>PAC, SEDEX, Mini Envios e Uber Direct</b> em tempo real.</p>
+          <p class="cart-page-helper">Digite seu CEP para calcular o <b>Melhor Envio</b>. Uber Entregas permanece <b>A calcular</b>.</p>
           <div class="cart-page-cep"><input id="cartPageCep" inputmode="numeric" maxlength="9" placeholder="Digite seu CEP"><button id="cartPageQuoteButton" type="button">Calcular</button></div>
           <label class="cart-page-pickup-choice" id="cartPagePickupChoice"><input type="radio" name="cartPageReceiveMode" value="pickup"><span class="pickup-choice-icon">🏪</span><span><b>Retirada</b><small>Presencial reservada ou Retirada via Uber / 99 por conta do cliente.</small></span></label>
-          <label class="cart-page-delivery-choice"><input type="radio" name="cartPageReceiveMode" value="delivery" checked><span class="pickup-choice-icon">🚚</span><span><b>Entrega</b><small>PAC, SEDEX, Mini Envios e Uber Direct são cotados em tempo real no checkout.</small></span></label>
+          <label class="cart-page-delivery-choice"><input type="radio" name="cartPageReceiveMode" value="delivery" checked><span class="pickup-choice-icon">🚚</span><span><b>Entrega</b><small>Melhor Envio calcula no checkout; Uber fica A calcular.</small></span></label>
           <div id="cartPageShippingOptions" class="cart-page-shipping"><div class="cart-page-shipping-empty">Informe seu CEP para registrar a localização do pedido.</div></div>
           <div class="cart-page-total-box">
             <div><span>Subtotal</span><b id="cartPageSubtotal">R$ 0,00</b></div>
@@ -523,7 +523,7 @@
                 <div class="fulfillment-flow">
                   <div class="fulfillment-group"><div class="fulfillment-title"><span>🚚</span><div><b>Entrega</b><small>Receba no endereço informado</small></div></div><div class="delivery-options nested">
                     <label class="delivery-option"><input type="radio" name="delivery" value="melhor_envio" checked><span class="delivery-icon">📦</span><span><b>Melhor Envio</b><small>Cotação em tempo real no checkout</small></span></label>
-                    <label class="delivery-option"><input type="radio" name="delivery" value="uber"><span class="delivery-icon">🛵</span><span><b>Uber Direct</b><small>Cotação em tempo real pelo CEP</small></span></label>
+                    <label class="delivery-option"><input type="radio" name="delivery" value="uber"><span class="delivery-icon">🛵</span><span><b>Uber Entregas</b><small>A calcular — o valor será informado depois no pedido</small></span></label>
                   </div></div>
                   <div class="fulfillment-group"><div class="fulfillment-title"><span>🏪</span><div><b>Retirada</b><small>Escolha a forma de retirada</small></div></div><div class="delivery-options nested">
                     <label class="delivery-option"><input type="radio" name="delivery" value="pickup"><span class="delivery-icon">🤝</span><span><b>Retirada presencial</b><small>Retire após a confirmação</small></span></label>
@@ -535,7 +535,7 @@
               </div>
 
               <div class="form-section checkout-step-card checkout-address-step" id="addressFields">
-                <div class="section-heading-row"><div><h3>CEP e endereço</h3><p class="micro-note">Para entrega, informe o CEP. PAC, SEDEX, Mini Envios e Uber Direct serão cotados agora.</p></div><span class="checkout-step-badge">CEP</span></div>
+                <div class="section-heading-row"><div><h3>CEP e endereço</h3><p class="micro-note">Para entrega, informe o CEP. O Melhor Envio é cotado agora; Uber Entregas fica “A calcular”.</p></div><span class="checkout-step-badge">CEP</span></div>
                 <div class="form-grid">
                   <label>CEP<div class="input-with-action"><input name="cep" id="cep" inputmode="numeric" placeholder="00000-000" maxlength="9"><button type="button" id="quoteShippingButton">CALCULAR FRETE</button></div></label>
                   <label>Endereço<input name="address" id="address"></label>
@@ -544,8 +544,8 @@
                   <label>Bairro<input name="district" id="district"></label>
                   <label>Cidade / UF<input name="city" id="city"></label>
                 </div>
-                <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Informe o CEP</b><span>Vamos consultar PAC, SEDEX, Mini Envios e Uber Direct em tempo real.</span></div></div>
-                <p class="micro-note" id="shippingStatusNote">O frete escolhido entra no total do pedido e será enviado à InfinitePay. O Pedido de Venda no Bling receberá o valor do frete.</p>
+                <div id="shippingQuotePanel" class="shipping-quote-panel"><div class="shipping-empty"><b>Informe o CEP</b><span>O Melhor Envio calcula o frete em tempo real. Uber Entregas fica “A calcular”.</span></div></div>
+                <p class="micro-note" id="shippingStatusNote">O Melhor Envio será cotado agora e incluído no pagamento. Para Uber Entregas, o pedido é criado primeiro e o frete será lançado depois no pedido.</p>
               </div>
               <div class="checkout-stage-actions"><button class="checkout-stage-back" id="checkoutBackToData" type="button">← Voltar para dados</button><button class="btn btn-gold checkout-stage-next" id="checkoutToPayment" type="button">CONTINUAR PARA PAGAMENTO →</button></div>
             </section>

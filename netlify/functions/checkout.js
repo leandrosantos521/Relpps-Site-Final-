@@ -6,7 +6,7 @@ const {createDelivery: createUberDelivery,quote: quoteUberDelivery}=require('./_
 function json(statusCode,body,headers={}){return{statusCode,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...headers},body:JSON.stringify(body)}}
 function orderId(){return `REL-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,8).toUpperCase()}`}
 function isProduction(){return process.env.CHECKOUT_TEST_MODE==='false'}
-function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmetico.netlify.app').replace(/\/$/,'')}
+function publicBaseUrl(){return String(process.env.PUBLIC_SITE_URL||'https://relppscosmetic.netlify.app').replace(/\/$/,'')}
 function storeConfigured(){return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)}
 function money(v){return Number(Number(v||0).toFixed(2));}
 function adminSecretOk(event,body={}){const expected=String(process.env.RELPPS_ADMIN_RELEASE_SECRET||'').trim(); const supplied=String(body.secret||event.headers?.['x-relpps-admin-secret']||event.headers?.['X-Relpps-Admin-Secret']||'').trim(); return Boolean(expected && supplied && supplied===expected);}
@@ -154,7 +154,7 @@ async function createInfinitePayCheckout(order){
       description:`Pedido Relpps ${order.id}`
     }],
     order_nsu:String(order.id),
-    redirect_url:`${publicBaseUrl()}/pedido.html?order=${encodeURIComponent(order.id)}`,
+    redirect_url:`${publicBaseUrl()}/${isPickupMethodServer(order.delivery?.method)?`retirada.html?order=${encodeURIComponent(order.id)}`:`?checkout=infinitepay-return&order=${encodeURIComponent(order.id)}`}`,
     webhook_url:`${publicBaseUrl()}/.netlify/functions/checkout?action=infinitepay-webhook`,
     customer:{
       name:String(order.customer?.name||'').trim(),
@@ -247,11 +247,11 @@ async function melhorEnvioFreightQuote(order){
   const base=process.env.MELHOR_ENVIO_SANDBOX==='true'?'https://sandbox.melhorenvio.com.br':'https://melhorenvio.com.br';
   const items=orderItemsForShipping(order);
   if(!items.length) throw new Error('O pedido não possui itens para cotar.');
-  const payload={from:{postal_code:from},to:{postal_code:to},products:items.map(i=>({id:i.id,width:i.width,height:i.height,length:i.length,weight:i.weight,insurance_value:i.price,quantity:i.quantity})),options:{receipt:false,own_hand:false},services:'1,2'};
+  const payload={from:{postal_code:from},to:{postal_code:to},products:items.map(i=>({id:i.id,width:i.width,height:i.height,length:i.length,weight:i.weight,insurance_value:i.price,quantity:i.quantity})),options:{receipt:false,own_hand:false}};
   const r=await fetch(`${base}/api/v2/me/shipment/calculate`,{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json','Content-Type':'application/json','User-Agent':process.env.MELHOR_ENVIO_USER_AGENT||'Relpps Cosméticos (contato@relpps.com.br)'},body:JSON.stringify(payload)});
   const data=await r.json().catch(()=>[]);
   if(!r.ok) throw new Error(data?.message||'Falha na cotação do Melhor Envio.');
-  return Array.isArray(data)?data.filter(x=>!x.error).map(x=>({id:x.id,name:x.name||x.service||'Entrega',company:x.company?.name||x.company||'Correios',price:money(x.custom_price??x.price),delivery_time:x.custom_delivery_time??x.delivery_time,raw:x})).filter(x=>x.price>0).sort((a,b)=>{const rank=q=>/^pac(?:\s|$)/i.test(String(q.name))||String(q.id)==='1'?0:/^sedex(?:\s|$)/i.test(String(q.name))||String(q.id)==='2'?1:2;return rank(a)-rank(b)||a.price-b.price;}):[];
+  return Array.isArray(data)?data.filter(x=>!x.error).map(x=>({id:x.id,name:x.name||x.service||'Entrega',company:x.company?.name||x.company||'Melhor Envio',price:money(x.custom_price??x.price),delivery_time:x.custom_delivery_time??x.delivery_time,raw:x})).filter(x=>x.price>0):[];
 }
 
 async function createFullOrderPayment(order){
@@ -259,30 +259,6 @@ async function createFullOrderPayment(order){
   const paymentUrl=checkout?.url||checkout?.checkout_url||checkout?.payment_url||checkout?.link||checkout?.data?.url||null;
   if(!paymentUrl) throw new Error('A InfinitePay não retornou o link de pagamento.');
   return {checkout,paymentUrl};
-}
-
-async function dispatchUberForPaidOrder(order){
-  if(!order || order.delivery?.method!=='uber') return null;
-  if(order.raw?.uber?.delivery_id) return order.raw.uber;
-  let quoteId=order.delivery?.shipping?.quote_id || order.delivery?.shipping?.id || order.raw?.uber?.quote_id;
-  let quote=null;
-  try{
-    if(quoteId) {
-      quote={id:quoteId};
-    } else {
-      quote=await quoteUberDelivery({delivery:order.delivery||{},subtotal:Number(order.totals?.subtotal||order.totals?.total||0)});
-      quoteId=quote?.id||null;
-    }
-    if(!quoteId) throw new Error('Cotação Uber não encontrada.');
-    const delivery=await createUberDelivery({order,quoteId});
-    const uber={quote_id:quoteId,delivery_id:delivery?.id||null,tracking_url:delivery?.tracking_url||delivery?.trackingUrl||null,status:delivery?.status||'created',raw:delivery,created_at:new Date().toISOString()};
-    await safeUpdateOrder(order.id,{raw:{...(order.raw||{}),fulfillmentStatus:'Uber Direct solicitado',uber}});
-    return uber;
-  }catch(e){
-    console.error('[Uber Direct dispatch]',e);
-    await safeUpdateOrder(order.id,{raw:{...(order.raw||{}),fulfillmentStatus:'Pagamento aprovado — aguardando despacho Uber Direct',uber_error:e.message}});
-    return null;
-  }
 }
 
 async function persistUberPaymentMeta(blingOrder, {paymentUrl,total,freight}){
@@ -407,7 +383,7 @@ async function createOrder(body){
   const payment=String(body.payment||'');
   if(!['pix_online','card','cash','pending'].includes(payment)) throw new Error('Forma de pagamento inválida.');
   if(payment==='cash' && body.delivery?.method!=='pickup') throw new Error('Dinheiro está disponível somente para retirada presencial.');
-  if(payment==='pending') throw new Error('Pagamento pendente não está mais disponível. Escolha Pix ou Cartão.');
+  if(payment==='pending' && body.delivery?.method!=='uber') throw new Error('Pagamento pendente só pode ser usado em Uber Entregas.');
   if(!Array.isArray(body.items)||!body.items.length) throw new Error('Carrinho vazio.');
   const id=orderId();
   if(isProduction() && process.env.BLING_CREATE_ORDERS!=='true') throw new Error('Para produção, ative BLING_CREATE_ORDERS=true para validar estoque/preços no Bling antes de cobrar.');
@@ -425,10 +401,7 @@ async function createOrder(body){
     if(!verification.ok) throw new Error(verification.expired?'A cotação do Melhor Envio expirou. Calcule novamente.':'Cotação do Melhor Envio inválida. Calcule o frete novamente antes de pagar.');
     delivery.shipping={...sh,price:money(verification.price),manual:false,quote_id:verification.quoteId||sh.id};
   } else if(delivery.method==='uber'){
-    const sh={...(delivery.shipping||{})};
-    const verification=verifyShippingQuoteToken(sh.quote_token,{provider:'uber',cep:delivery.cep,price:sh.price,service:sh.id||sh.service});
-    if(!verification.ok) throw new Error(verification.expired?'A cotação do Uber Direct expirou. Calcule novamente.':'Cotação do Uber Direct inválida. Calcule o frete novamente antes de pagar.');
-    delivery.shipping={...sh,provider:'uber',price:money(verification.price),manual:false,quote_id:verification.quoteId||sh.id};
+    delivery.shipping={provider:'uber',id:'uber_manual',service:'uber_manual',label:'Uber Entregas — A calcular',price:0,manual:true};
   } else delivery.shipping={...(delivery.shipping||{}),price:0};
   const baseOrder={...body,delivery,id,status:'Aguardando pagamento',paymentStatus:'Aguardando pagamento',createdAt:new Date().toISOString(),fulfillmentStatus:fulfillmentForCreate(delivery.method,payment)};
   if(delivery.method==='pickup') baseOrder.delivery={...delivery,pickupAddress:process.env.STORE_PICKUP_ADDRESS||'C 12, Área Especial 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'};
@@ -457,8 +430,12 @@ async function createOrder(body){
     return {ok:true,order:{...baseOrder,bling,paymentUrl:null},paymentUrl:null};
   }
 
-  if(!isProduction()){
+  if(delivery.method==='uber'){
+    await safeUpdateOrder(id,{payment_url:null,raw:{...baseOrder,bling,freightPending:true,fulfillmentStatus:'Aguardando cálculo do frete'}});
+    return {ok:true,order:{...baseOrder,bling,paymentUrl:null,freightPending:true},paymentUrl:null,freightPending:true};
+  }
 
+  if(!isProduction()){
     return {ok:true,order:{...baseOrder,bling},paymentUrl:null,testMode:true};
   }
 
@@ -530,9 +507,8 @@ async function handleInfinitePayWebhook(event){
 
   const updated=await safeUpdateOrder(order.id,{
     status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),
-    raw:{...(order.raw||{}),fulfillmentStatus:order.delivery?.method==='pickup_uber'?'Aguardando liberação da loja':(order.delivery?.method==='pickup'?'Liberado para retirada':(order.delivery?.method==='uber'?'Pagamento aprovado — preparando Uber Direct':'Liberado para entrega')),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:body?.receipt_url||null}}
+    raw:{...(order.raw||{}),fulfillmentStatus:order.delivery?.method==='pickup_uber'?'Aguardando liberação da loja':(order.delivery?.method==='pickup'?'Liberado para retirada':'Liberado para entrega'),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,amount:payment.amount,paid_amount:payment.paid_amount,installments:payment.installments,receipt_url:body?.receipt_url||null}}
   });
-  if(order.delivery?.method==='uber') await dispatchUberForPaidOrder({...order,...updated,delivery:order.delivery});
   if(order.raw?.customer?.userId && order.raw?.discounts?.couponCode){
     try{await markCouponUsed(order.raw.discounts.couponCode,order.raw.customer.userId)}catch(e){console.error('[Coupon]',e)}
   }
@@ -556,8 +532,7 @@ async function checkInfinitePayReturn(event){
         if(paidSituation){try{await setOrderSituation(order.bling_order_id,paidSituation)}catch(e){console.error('[Bling return update]',e)}}
         await markBlingPaymentApproved(order.bling_order_id,{...payment,transaction_nsu:transactionNsu,slug});
       }
-      const updatedReturn=await safeUpdateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),fulfillmentStatus:order.delivery?.method==='pickup_uber'?'Aguardando liberação da loja':(order.delivery?.method==='pickup'?'Liberado para retirada':(order.delivery?.method==='uber'?'Pagamento aprovado — preparando Uber Direct':'Liberado para entrega')),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,receipt_url:null}}});
-      if(order.delivery?.method==='uber') await dispatchUberForPaidOrder({...order,...updatedReturn,delivery:order.delivery});
+      await safeUpdateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw:{...(order.raw||{}),fulfillmentStatus:order.delivery?.method==='pickup_uber'?'Aguardando liberação da loja':(order.delivery?.method==='pickup'?'Liberado para retirada':'Liberado para entrega'),payment:{provider:'InfinitePay',transaction_nsu:transactionNsu,invoice_slug:slug,capture_method:payment.capture_method,receipt_url:null}}});
     }
   }
   return json(200,{ok:true,paid:Boolean(payment?.paid),payment});
@@ -568,34 +543,9 @@ async function getPublicOrder(id){
   const order=await resolveOrder(id);
   if(!order) return json(404,{message:'Pedido não encontrado.'});
   const paid=order.payment_status==='APPROVED' || order.status==='PAID';
-  return json(200,{ok:true,order:{id:order.id,status:paid?'PAID':order.status||'AWAITING_PAYMENT',paymentStatus:paid?'APPROVED':(order.payment_status||'AWAITING_PAYMENT'),paymentMethod:order.payment_method||order.raw?.payment||null,paymentUrl:order.payment_url||null,blingOrderId:order.bling_order_id,createdAt:order.created_at||null,paidAt:order.paid_at||null,customer:order.customer||order.raw?.customer||{},delivery:order.delivery||{},totals:order.totals||{},items:order.items||order.raw?.items||[],fulfillmentStatus:order.raw?.fulfillmentStatus||null,freight:order.delivery?.shipping||order.raw?.freight||null,freightPayment:order.raw?.freightPayment||null,uber:order.raw?.uber||null}});
+  return json(200,{ok:true,order:{id:order.id,status:paid?'PAID':order.status||'AWAITING_PAYMENT',paymentStatus:paid?'APPROVED':(order.payment_status||'AWAITING_PAYMENT'),paymentMethod:order.payment_method||order.raw?.payment||null,paymentUrl:order.payment_url||null,blingOrderId:order.bling_order_id,createdAt:order.created_at||null,paidAt:order.paid_at||null,delivery:order.delivery||{},totals:order.totals||{},items:order.items||order.raw?.items||[],fulfillmentStatus:order.raw?.fulfillmentStatus||null,freight:order.delivery?.shipping||order.raw?.freight||null,freightPayment:order.raw?.freightPayment||null,uber:order.raw?.uber||null}});
 }
 
-
-async function releaseCashOrder(event){
-  let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
-  if(!adminSecretOk(event,body)) return json(401,{message:'Não autorizado.'});
-  const id=String(body.order||'').trim(); if(!id) return json(400,{message:'Informe o número do pedido.'});
-  const order=await resolveOrder(id); if(!order) return json(404,{message:'Pedido não encontrado.'});
-  if(order.delivery?.method!=='pickup' || order.payment_method!=='cash') return json(409,{message:'Este pedido não é uma retirada presencial com pagamento em dinheiro.'});
-  const raw={...(order.raw||{}),fulfillmentStatus:'Liberado para retirada',releasedAt:new Date().toISOString(),payment:{provider:'Dinheiro na loja',status:'Aguardando pagamento na retirada'}};
-  const updated=await safeUpdateOrder(id,{raw});
-  return json(200,{ok:true,order:{id:updated?.id||id,status:updated?.status||'AWAITING_PAYMENT',paymentStatus:updated?.payment_status||'AWAITING_PAYMENT',fulfillmentStatus:raw.fulfillmentStatus}});
-}
-
-async function confirmCashOrder(event){
-  let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
-  if(!adminSecretOk(event,body)) return json(401,{message:'Não autorizado.'});
-  const id=String(body.order||'').trim(); if(!id) return json(400,{message:'Informe o número do pedido.'});
-  const order=await resolveOrder(id); if(!order) return json(404,{message:'Pedido não encontrado.'});
-  if(order.delivery?.method!=='pickup' || order.payment_method!=='cash') return json(409,{message:'Este pedido não é uma retirada presencial com pagamento em dinheiro.'});
-  if(String(order.raw?.fulfillmentStatus||'')!=='Liberado para retirada') return json(409,{message:'Libere o pedido para retirada antes de confirmar o pagamento.'});
-  let blingUpdated=null;
-  if(order.bling_order_id){try{const paidSituation=situationId('paid');if(paidSituation)blingUpdated=await setOrderSituation(order.bling_order_id,paidSituation);}catch(e){console.error('[Bling cash confirm]',e)}}
-  const raw={...(order.raw||{}),fulfillmentStatus:'Retirada liberada — pagamento em dinheiro confirmado',payment:{provider:'Dinheiro na loja',status:'PAID',approved_at:new Date().toISOString()}};
-  const updated=await safeUpdateOrder(id,{status:'PAID',payment_status:'APPROVED',paid_at:new Date().toISOString(),raw});
-  return json(200,{ok:true,order:{id:updated?.id||id,status:'PAID',paymentStatus:'APPROVED',fulfillmentStatus:raw.fulfillmentStatus},blingUpdated});
-}
 
 async function releaseOrder(event){
   let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
@@ -607,27 +557,26 @@ async function releaseOrder(event){
   const updated=await safeUpdateOrder(id,{raw});
   return json(200,{ok:true,order:{id:updated.id,status:updated.status,paymentStatus:updated.payment_status,fulfillmentStatus:raw.fulfillmentStatus,delivery:updated.delivery}});
 }
-async function dispatchUberAdmin(event){
-  let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
-  if(!adminSecretOk(event,body)) return json(401,{message:'Não autorizado.'});
-  const id=String(body.order||'').trim(); if(!id)return json(400,{message:'Informe o número do pedido.'});
-  const order=await resolveOrder(id); if(!order)return json(404,{message:'Pedido não encontrado.'});
-  if(order.delivery?.method!=='uber')return json(409,{message:'Este pedido não usa Uber Direct.'});
-  if(order.payment_status!=='APPROVED')return json(409,{message:'O pagamento ainda não foi aprovado.'});
-  const uber=await dispatchUberForPaidOrder(order);
-  if(!uber)return json(502,{message:'Não foi possível despachar o Uber Direct. Verifique as credenciais e o status da conta Uber.'});
-  return json(200,{ok:true,order:id,uber});
-}
-
 async function requestUber(event){
   let body={}; try{body=JSON.parse(event.body||'{}')}catch{}
   const id=String(body.order||'').trim(); if(!id) return json(400,{message:'Informe o número do pedido.'});
   const order=await resolveOrder(id); if(!order) return json(404,{message:'Pedido não encontrado.'});
   const fulfillment=String(order.raw?.fulfillmentStatus||'');
   if(order.payment_status!=='APPROVED') return json(409,{message:'O pagamento ainda não foi aprovado.'});
-  if(order.delivery?.method!=='pickup_uber') return json(409,{message:'Este pedido não é uma retirada via Uber / 99.'});
-  if(fulfillment!=='Liberado para Uber') return json(409,{message:'A loja ainda não liberou a retirada.'});
-  return json(200,{ok:true,uber:{customerRide:true,order:id,uber_url:'https://m.uber.com/ul/',nine_nine_url:'https://99app.com/',pickup_address:process.env.STORE_PICKUP_ADDRESS||'C 12, AE 02, Loja 30 — Taguatinga Centro, Brasília - DF — CEP 72010-901'}});
+  if(order.delivery?.method!=='pickup_uber') return json(409,{message:'Este pedido não é uma retirada via Uber.'});
+  if(fulfillment!=='Liberado para Uber') return json(409,{message:'A loja ainda não liberou o pedido para o Uber.'});
+  if(order.raw?.uber?.delivery_id) return json(200,{ok:true,uber:order.raw.uber});
+  let quoteId=order.delivery?.shipping?.id || order.delivery?.shipping?.quote_id || order.raw?.uber?.quote_id;
+  if(!quoteId){
+    const q=await quoteUberDelivery({delivery:order.delivery||{},subtotal:Number(order.totals?.subtotal||order.totals?.total||0)});
+    quoteId=q?.id||null;
+  }
+  if(!quoteId) return json(409,{message:'Não foi possível obter uma nova cotação do Uber Direct. Confira se o Uber Direct está habilitado no Netlify.'});
+  const delivery=await createUberDelivery({order,quoteId});
+  const uber={quote_id:quoteId,delivery_id:delivery?.id||null,tracking_url:delivery?.tracking_url||delivery?.trackingUrl||null,status:delivery?.status||'created',raw:delivery,created_at:new Date().toISOString()};
+  const raw={...(order.raw||{}),fulfillmentStatus:'Uber solicitado',uber};
+  await safeUpdateOrder(id,{raw});
+  return json(200,{ok:true,uber});
 }
 
 exports.syncUberFreightForOrder=syncUberFreightForOrder;
@@ -637,10 +586,7 @@ exports.handler=async(event)=>{
     const action=event.queryStringParameters?.action||'create';
     if(action==='infinitepay-webhook') return await handleInfinitePayWebhook(event);
     if(action==='release') return await releaseOrder(event);
-    if(action==='release-cash') return await releaseCashOrder(event);
-    if(action==='confirm-cash') return await confirmCashOrder(event);
     if(action==='request-uber') return await requestUber(event);
-    if(action==='dispatch-uber') return await dispatchUberAdmin(event);
     if(action==='calculate-freight') return await calculateFreight(event);
     if(action==='set-freight') return await setFreight(event);
     if(action==='sync-uber-freight') return await syncUberFreightFromBling(event);

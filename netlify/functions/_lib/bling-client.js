@@ -3,13 +3,6 @@ const { getBlingOAuth, saveBlingOAuth, clearBlingOAuth } = require('./bling-oaut
 
 function cleanDoc(v){ return String(v || '').replace(/\D/g,''); }
 
-function isValidCpf(v){
-  const d=cleanDoc(v); if(d.length!==11 || /^(\d)\1{10}$/.test(d)) return false;
-  let sum=0; for(let i=0;i<9;i++) sum+=Number(d[i])*(10-i); let r=sum%11; let dig1=r<2?0:11-r; if(dig1!==Number(d[9])) return false;
-  sum=0; for(let i=0;i<10;i++) sum+=Number(d[i])*(11-i); r=sum%11; const dig2=r<2?0:11-r; return dig2===Number(d[10]);
-}
-function cleanPhone(v){const d=cleanDoc(v); return d.length>11?d.slice(-11):d;}
-
 async function getAccessToken(){
   const access=process.env.BLING_ACCESS_TOKEN;
   if(access) return access;
@@ -60,46 +53,34 @@ async function getProduct(id){
 }
 
 async function findOrCreateContact(customer, delivery){
-  const rawCpf=cleanDoc(customer?.cpf);
-  const cpf=isValidCpf(rawCpf)?rawCpf:'';
+  const cpf=cleanDoc(customer?.cpf);
   let contact=null;
   if(cpf){
     const found=await blingFetch(`/contatos?numeroDocumento=${encodeURIComponent(cpf)}&limite=10`);
     const rows=Array.isArray(found?.data)?found.data:[];
     contact=rows.find(x=>cleanDoc(x?.numeroDocumento)===cpf) || rows[0] || null;
   }
-  if(!contact && String(customer?.email||'').trim()){
-    try{
-      const found=await blingFetch(`/contatos?email=${encodeURIComponent(String(customer.email).trim())}&limite=10`);
-      const rows=Array.isArray(found?.data)?found.data:[];
-      contact=rows[0]||null;
-    }catch(e){console.warn('[Bling contato] busca por e-mail indisponível:',e.message)}
-  }
   if(contact?.id) return contact;
 
-  const cityParts=String(delivery?.city||'').split('/').map(x=>x.trim());
+  const cityParts=String(delivery?.city||'').split('/');
   const payload={
-    nome:String(customer?.name||'Cliente Relpps').trim().slice(0,120),
+    nome:String(customer?.name||'Cliente Relpps').trim(),
     tipoPessoa:'F',
-    email:String(customer?.email||'').trim().slice(0,120),
-    telefone:cleanPhone(customer?.phone)
+    numeroDocumento:cpf,
+    email:String(customer?.email||'').trim(),
+    telefone:String(customer?.phone||'').replace(/\D/g,''),
+    endereco:{
+      geral:{
+        endereco:String(delivery?.address||''),
+        numero:String(delivery?.number||''),
+        complemento:String(delivery?.complement||''),
+        bairro:String(delivery?.district||''),
+        municipio:String(cityParts[0]||delivery?.city||'').trim(),
+        uf:String(cityParts[1]||'').trim(),
+        cep:String(delivery?.cep||'').replace(/\D/g,'')
+      }
+    }
   };
-  const cepValue=String(delivery?.cep||'').replace(/\D/g,'').slice(0,8);
-  const addressValue=String(delivery?.address||'').trim();
-  if(addressValue || cepValue){
-    payload.endereco={geral:{
-      endereco:addressValue.slice(0,120),
-      numero:String(delivery?.number||'').trim().slice(0,20),
-      complemento:String(delivery?.complement||'').trim().slice(0,80),
-      bairro:String(delivery?.district||'').trim().slice(0,80),
-      municipio:String(cityParts[0]||delivery?.city||'').trim().slice(0,80),
-      uf:String(cityParts[1]||delivery?.uf||'').trim().slice(0,2).toUpperCase(),
-      cep:cepValue
-    }};
-  }
-  // O Bling rejeita documentos vazios/malformados em algumas contas. Só enviamos
-  // CPF quando ele passou pela validação de dígitos; o pedido continua ligado ao contato.
-  if(cpf) payload.numeroDocumento=cpf;
   const created=await blingFetch('/contatos',{method:'POST',body:JSON.stringify(payload)});
   return created?.data || created;
 }
@@ -201,12 +182,9 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
     };
   });
 
-  const orderContact={id:Number(contact.id),nome:String(contact.nome||customer.name||'Cliente'),tipoPessoa:'F'};
-  const contactDoc=cleanDoc(contact.numeroDocumento||customer.cpf);
-  if(contactDoc) orderContact.numeroDocumento=contactDoc;
   const order={
     ...(pendingSituation?{situacao:{id:pendingSituation}}:{}),
-    contato:orderContact,
+    contato:{id:Number(contact.id),nome:String(contact.nome||customer.name||'Cliente'),tipoPessoa:'F',numeroDocumento:String(contact.numeroDocumento||customer.cpf||'').replace(/\D/g,'')},
     itens:saleItems,
     parcelas:paymentFormId?[{dataVencimento:new Date(Date.now()+24*60*60*1000).toISOString().slice(0,10),valor:Number(total.toFixed(2)),formaPagamento:{id:paymentFormId},observacoes:`Relpps ${paymentKind.toUpperCase()} | Pedido online ${orderId} | Aguardando pagamento`}]:[],
     data:new Date().toISOString().slice(0,10),
@@ -214,8 +192,8 @@ async function createSaleOrder({orderId,customer,delivery,items,totals,payment,d
     totalProdutos:Number(baseSubtotal.toFixed(2)),
     total:Number(total.toFixed(2)),
     desconto:{valor:Number((automaticDiscount+couponDiscount).toFixed(2)),unidade:'REAL'},
-    observacoes:`Pedido online Relpps ${orderId} | ${paymentKind==='cash'?'DINHEIRO NA RETIRADA':paymentKind==='pix'?'PIX ONLINE':paymentKind==='card'?'CARTÃO ONLINE':'PAGAMENTO ONLINE'} | Status: Aguardando pagamento | Frete: ${shipping>0?`${String(delivery?.shipping?.label||delivery?.shipping?.service||'Entrega')} R$ ${shipping.toFixed(2)}`:'Sem frete'}`,
-    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: ${shipping>0?`${String(delivery?.shipping?.label||delivery?.shipping?.service||'Entrega')} R$ ${shipping.toFixed(2)}`:'Sem frete'} | Gateway: ${paymentKind==='cash'?'não utilizado':'InfinitePay'} | RELPPS_META:${JSON.stringify({method:relppsMeta.method||delivery?.method||'delivery',payment:relppsMeta.payment||payment,fulfillmentStatus:relppsMeta.fulfillmentStatus||'Aguardando pagamento'})}`,
+    observacoes:`Pedido online Relpps ${orderId} | ${paymentKind==='pending'?'PAGAMENTO APÓS COTAÇÃO':paymentKind==='cash'?'DINHEIRO NA RETIRADA':paymentKind==='pix'?'PIX ONLINE':'CARTÃO ONLINE'} | Status: Aguardando pagamento | Frete: ${delivery?.method==='uber'?'A CALCULAR — UBER ENTREGAS':'A CALCULAR NO MELHOR ENVIO'}`,
+    observacoesInternas:`Desconto automático: R$ ${automaticDiscount.toFixed(2)} | Cupom: R$ ${couponDiscount.toFixed(2)} | Frete: ${shipping>0?`R$ ${shipping.toFixed(2)}`:(delivery?.method==='uber'?"A CALCULAR — UBER ENTREGAS":"A CALCULAR NO MELHOR ENVIO")} | Gateway: ${paymentKind==='cash'?'não utilizado':paymentKind==='pending'?'aguardando cotação':'InfinitePay'} | RELPPS_META:${JSON.stringify({method:relppsMeta.method||delivery?.method||'delivery',payment:relppsMeta.payment||payment,fulfillmentStatus:relppsMeta.fulfillmentStatus||'Aguardando pagamento'})}`,
     transporte:{
       fretePorConta:1,
       frete:Number(shipping.toFixed(2)),
