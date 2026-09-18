@@ -45,3 +45,8 @@
   from = "/api/bling-homologacao"
   to = "/.netlify/functions/bling-homologacao"
   status = 200
+
+[[redirects]]
+  from = "/api/bling-webhook"
+  to = "/.netlify/functions/bling-webhook-background"
+  status = 200
